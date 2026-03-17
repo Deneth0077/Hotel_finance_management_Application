@@ -5,11 +5,11 @@ import Transaction from "@/models/Transaction";
 
 export async function POST(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     await connectToDatabase();
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json(); // { date, type, cost, technician, notes }
 
     // 1. Update Asset Maintenance History

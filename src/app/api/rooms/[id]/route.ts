@@ -4,10 +4,10 @@ import Room from "@/models/Room";
 
 export async function PATCH(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     const body = await request.json();
     await connectToDatabase();
 
@@ -25,10 +25,10 @@ export async function PATCH(
 
 export async function DELETE(
   request: Request,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const { id } = params;
+    const { id } = await params;
     await connectToDatabase();
     await Room.findByIdAndDelete(id);
     return NextResponse.json({ message: "Room deleted" });
