@@ -1,16 +1,19 @@
 "use client";
 
-import { BedDouble, Plus, X, Save, Edit3, Trash2, User, Calendar, ExternalLink, Info } from "lucide-react";
+import { BedDouble, Plus, X, Save, Edit3, Trash2, User, Calendar, ExternalLink, Info, CheckCircle2 } from "lucide-react";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { formatLKR } from "@/lib/currency";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { BookingForm } from "@/components/dashboard/BookingForm";
 
 export default function RoomsPage() {
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
+  const [selectedRoomId, setSelectedRoomId] = useState<string | null>(null);
   const [selectedRoomDetails, setSelectedRoomDetails] = useState<any>(null);
   const [formData, setFormData] = useState({
     roomNumber: "",
@@ -220,10 +223,26 @@ export default function RoomsPage() {
                   </td>
                   <td className="p-4 text-right">
                     <div className="flex items-center justify-end gap-2">
-                       {r.activeBooking && (
-                         <button className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors border border-transparent hover:border-blue-100">
+                       {r.activeBooking ? (
+                         <button 
+                           onClick={() => setSelectedRoomDetails(r)}
+                           className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors border border-transparent hover:border-blue-100"
+                         >
                            <Info className="h-4 w-4" />
                          </button>
+                       ) : (
+                         r.status === "Available" && (
+                           <button 
+                             onClick={(e) => {
+                               e.stopPropagation();
+                               setSelectedRoomId(r._id);
+                               setIsBookingFormOpen(true);
+                             }}
+                             className="px-3 py-1.5 rounded-lg bg-emerald-50 text-emerald-600 hover:bg-emerald-100 transition-colors border border-emerald-100 text-[10px] font-black uppercase flex items-center gap-1.5"
+                           >
+                             <CheckCircle2 className="h-3 w-3" /> Check-In
+                           </button>
+                         )
                        )}
                        <button 
                          onClick={(e) => {
@@ -366,6 +385,17 @@ export default function RoomsPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {isBookingFormOpen && (
+        <BookingForm 
+          onClose={() => {
+            setIsBookingFormOpen(false);
+            setSelectedRoomId(null);
+          }} 
+          onSuccess={fetchRooms} 
+          prefillRoomId={selectedRoomId || undefined}
+        />
       )}
     </div>
   );

@@ -1,19 +1,21 @@
 "use client";
 
-import { 
-  Search, Plus, X, Save, 
-  User, Calendar, CreditCard, 
-  Stethoscope, Utensils, Info, 
+import {
+  Search, Plus, X, Save,
+  User, Calendar, CreditCard,
+  Stethoscope, Utensils, Info,
   Trash2, Edit3, CheckCircle2,
   TrendingDown, TrendingUp, HandCoins,
   History, PlaneLanding, PlaneTakeoff,
-  MapPin, Phone, Mail, FileText
+  MapPin, Phone, Mail, FileText,
+  Edit2, ExternalLink, Globe, Shield, BedDouble
 } from "lucide-react";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { formatLKR } from "@/lib/currency";
 import { useState, useEffect } from "react";
 import { toast } from "sonner";
+import { BookingForm } from "@/components/dashboard/BookingForm";
 
 export default function GuestsPage() {
   const [guests, setGuests] = useState<any[]>([]);
@@ -23,6 +25,7 @@ export default function GuestsPage() {
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [isBookingFormOpen, setIsBookingFormOpen] = useState(false);
   const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
   const [isSpendingModalOpen, setIsSpendingModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
@@ -84,7 +87,7 @@ export default function GuestsPage() {
     try {
       const url = editingGuestId ? `/api/guests/${editingGuestId}` : "/api/guests";
       const method = editingGuestId ? "PATCH" : "POST";
-      
+
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
@@ -175,8 +178,8 @@ export default function GuestsPage() {
   };
 
   const finances = calculateFinance();
-  const filteredGuests = guests.filter(g => 
-    g.name?.toLowerCase().includes(searchQuery.toLowerCase()) || 
+  const filteredGuests = guests.filter(g =>
+    g.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
     g.email?.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
@@ -188,7 +191,7 @@ export default function GuestsPage() {
           <h1 className="text-3xl font-bold tracking-tight">Guest Relations</h1>
           <p className="text-muted-foreground">360-degree view of guest stay, finance, and wellness.</p>
         </div>
-        <button 
+        <button
           onClick={() => setIsFormOpen(true)}
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
         >
@@ -201,15 +204,15 @@ export default function GuestsPage() {
         <div className="lg:col-span-3 space-y-4">
           <div className="relative">
             <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
-            <input 
-              type="text" 
-              placeholder="Search guests..." 
-              className="h-10 w-full rounded-lg border border-input bg-background pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none" 
+            <input
+              type="text"
+              placeholder="Search guests..."
+              className="h-10 w-full rounded-lg border border-input bg-background pl-10 pr-4 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
               value={searchQuery}
               onChange={e => setSearchQuery(e.target.value)}
             />
           </div>
-          
+
           <div className="space-y-2 max-h-[calc(100vh-250px)] overflow-y-auto pr-1">
             {loading ? (
               <div className="p-8 text-center"><span className="animate-pulse text-sm text-muted-foreground">Loading Guests...</span></div>
@@ -218,8 +221,8 @@ export default function GuestsPage() {
                 key={g._id}
                 onClick={() => setSelectedId(g._id)}
                 className={`w-full rounded-xl p-4 text-left transition-all border ${
-                  selectedId === g._id 
-                    ? "bg-primary/10 border-primary/30 shadow-sm" 
+                  selectedId === g._id
+                    ? "bg-primary/10 border-primary/30 shadow-sm"
                     : "bg-card border-transparent hover:border-border hover:bg-muted/30"
                 }`}
               >
@@ -269,7 +272,7 @@ export default function GuestsPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                       <button 
+                       <button
                          onClick={openEditModal}
                          className="p-2 rounded-lg hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors border"
                        >
@@ -370,11 +373,19 @@ export default function GuestsPage() {
                            </div>
                         </div>
                       ) : (
-                        <div className="p-12 text-center border-2 border-dashed rounded-2xl">
-                          <Calendar className="h-12 w-12 text-muted-foreground mx-auto mb-3 opacity-20" />
-                          <p className="text-muted-foreground font-medium">No active room bookings found for this guest.</p>
-                          <button className="mt-4 text-primary text-sm font-black uppercase tracking-widest hover:underline">+ Link New Stay</button>
-                        </div>
+                        <div className="flex border border-dashed rounded-xl p-8 flex-col items-center justify-center text-center space-y-4">
+                      <div className="p-4 bg-primary/5 rounded-full"><BedDouble className="h-8 w-8 text-primary/40" /></div>
+                      <div>
+                        <p className="font-bold">No active stay found</p>
+                        <p className="text-xs text-muted-foreground max-w-[200px]">This guest is currently not checked-in to any room.</p>
+                      </div>
+                      <button
+                        onClick={() => setIsBookingFormOpen(true)}
+                        className="px-6 py-2 bg-primary text-white rounded-lg text-xs font-black uppercase tracking-widest shadow-lg shadow-primary/20"
+                      >
+                        Link New Stay
+                      </button>
+                    </div>
                       )}
                     </div>
                   )}
@@ -595,6 +606,17 @@ export default function GuestsPage() {
             </form>
           </div>
         </div>
+      )}
+
+      {isBookingFormOpen && (
+        <BookingForm 
+          onClose={() => setIsBookingFormOpen(false)} 
+          onSuccess={() => {
+            if (selectedId) fetchFullDetails(selectedId);
+            fetchGuests();
+          }} 
+          prefillGroupId={selectedId || undefined}
+        />
       )}
     </div>
   );

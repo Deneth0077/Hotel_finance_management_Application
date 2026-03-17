@@ -8,16 +8,20 @@ interface BookingFormProps {
   onClose: () => void;
   onSuccess: () => void;
   initialData?: any;
+  prefillGroupId?: string;
+  prefillRoomId?: string;
 }
 
-export function BookingForm({ onClose, onSuccess, initialData }: BookingFormProps) {
+export function BookingForm({ onClose, onSuccess, initialData, prefillGroupId, prefillRoomId }: BookingFormProps) {
   const [guests, setGuests] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
   const [allBookings, setAllBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
+  const [isNewGuestMode, setIsNewGuestMode] = useState(false);
+  const [newGuestData, setNewGuestData] = useState({ name: "", email: "", phone: "", country: "" });
   const [formData, setFormData] = useState({
-    guestId: initialData?.guestId?._id || initialData?.guestId || "",
-    roomId: initialData?.roomId?._id || initialData?.roomId || "",
+    guestId: prefillGroupId || initialData?.guestId?._id || initialData?.guestId || "",
+    roomId: prefillRoomId || initialData?.roomId?._id || initialData?.roomId || "",
     package: initialData?.package || "7-Day Rejuvenate",
     checkIn: initialData?.checkIn ? new Date(initialData.checkIn).toISOString().split('T')[0] : "",
     checkOut: initialData?.checkOut ? new Date(initialData.checkOut).toISOString().split('T')[0] : "",
@@ -67,12 +71,31 @@ export function BookingForm({ onClose, onSuccess, initialData }: BookingFormProp
     e.preventDefault();
     setLoading(true);
     try {
+      let currentGuestId = formData.guestId;
+
+      // Create new guest first if in new guest mode
+      if (isNewGuestMode) {
+        const guestRes = await fetch("/api/guests", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(newGuestData),
+        });
+        if (guestRes.ok) {
+          const newGuest = await guestRes.json();
+          currentGuestId = newGuest._id;
+        } else {
+          toast.error("Failed to create new guest profile");
+          setLoading(false);
+          return;
+        }
+      }
+
       const url = initialData ? `/api/bookings/${initialData._id}` : "/api/bookings";
       const method = initialData ? "PATCH" : "POST";
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(formData),
+        body: JSON.stringify({ ...formData, guestId: currentGuestId }),
       });
       if (res.ok) {
         onSuccess();
@@ -101,23 +124,45 @@ export function BookingForm({ onClose, onSuccess, initialData }: BookingFormProp
 
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid gap-2">
-            <label className="text-sm font-medium">Select Guest</label>
-            <select 
-              required
-              className="rounded-lg border border-input bg-background p-2 text-sm"
-              value={formData.guestId}
-              onChange={e => setFormData({ ...formData, guestId: e.target.value })}
-            >
-              <option value="">Choose a guest...</option>
-              {guests.map(g => <option key={g._id} value={g._id}>{g.name}</option>)}
-            </select>
+            <div className="flex items-center justify-between">
+              <label className="text-sm font-medium">Guest Information</label>
+              {!initialData && (
+                <button 
+                  type="button" 
+                  onClick={() => setIsNewGuestMode(!isNewGuestMode)}
+                  className="text-[10px] font-black uppercase text-primary hover:underline"
+                >
+                  {isNewGuestMode ? "Select Existing" : "+ New Guest Profile"}
+                </button>
+              )}
+            </div>
+            
+            {isNewGuestMode ? (
+              <div className="grid grid-cols-2 gap-3 p-4 bg-muted/50 rounded-xl border border-dashed animate-in fade-in slide-in-from-top-2">
+                <input required placeholder="Full Name" className="col-span-2 rounded-lg border bg-background p-2 text-sm" value={newGuestData.name} onChange={e => setNewGuestData({...newGuestData, name: e.target.value})} />
+                <input placeholder="Email" className="rounded-lg border bg-background p-2 text-sm" value={newGuestData.email} onChange={e => setNewGuestData({...newGuestData, email: e.target.value})} />
+                <input required placeholder="Phone" className="rounded-lg border bg-background p-2 text-sm" value={newGuestData.phone} onChange={e => setNewGuestData({...newGuestData, phone: e.target.value})} />
+              </div>
+            ) : (
+              <select 
+                required
+                disabled={!!prefillGroupId}
+                className="rounded-lg border border-input bg-background p-2 text-sm disabled:opacity-75"
+                value={formData.guestId}
+                onChange={e => setFormData({ ...formData, guestId: e.target.value })}
+              >
+                <option value="">Choose a guest...</option>
+                {guests.map(g => <option key={g._id} value={g._id}>{g.name} ({g.phone})</option>)}
+              </select>
+            )}
           </div>
 
           <div className="grid gap-2">
             <label className="text-sm font-medium">Select Room</label>
             <select 
               required
-              className={`rounded-lg border border-input bg-background p-2 text-sm ${isRoomBooked(formData.roomId) ? 'border-destructive text-destructive' : ''}`}
+              disabled={!!prefillRoomId}
+              className={`rounded-lg border border-input bg-background p-2 text-sm disabled:opacity-75 ${isRoomBooked(formData.roomId) ? 'border-destructive text-destructive' : ''}`}
               value={formData.roomId}
               onChange={e => setFormData({ ...formData, roomId: e.target.value })}
             >
