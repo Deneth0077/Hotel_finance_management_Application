@@ -1,6 +1,6 @@
 "use client";
 
-import { BedDouble, Plus, X, Save, Edit3, Trash2 } from "lucide-react";
+import { BedDouble, Plus, X, Save, Edit3, Trash2, User, Calendar, ExternalLink, Info } from "lucide-react";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { formatLKR } from "@/lib/currency";
 import { useState, useEffect } from "react";
@@ -11,6 +11,7 @@ export default function RoomsPage() {
   const [loading, setLoading] = useState(true);
   const [isFormOpen, setIsFormOpen] = useState(false);
   const [editingRoomId, setEditingRoomId] = useState<string | null>(null);
+  const [selectedRoomDetails, setSelectedRoomDetails] = useState<any>(null);
   const [formData, setFormData] = useState({
     roomNumber: "",
     type: "Single",
@@ -138,57 +139,172 @@ export default function RoomsPage() {
         <div className="rounded-xl bg-card shadow-card overflow-x-auto">
           <table className="w-full text-sm">
             <thead>
-              <tr className="border-b border-border text-left">
-                <th className="p-4 font-medium text-muted-foreground">Room #</th>
-                <th className="p-4 font-medium text-muted-foreground">Type</th>
-                <th className="p-4 font-medium text-muted-foreground">Price</th>
-                <th className="p-4 font-medium text-muted-foreground">Status</th>
-                <th className="p-4 font-medium text-muted-foreground text-right">Actions</th>
+              <tr className="border-b border-border bg-muted/30">
+                <th className="p-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground">Room Details</th>
+                <th className="p-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground">Occupant Info</th>
+                <th className="p-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground">Rate</th>
+                <th className="p-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground">Status / Availability</th>
+                <th className="p-4 font-black uppercase tracking-widest text-[10px] text-muted-foreground text-right">Actions</th>
               </tr>
             </thead>
             <tbody>
               {rooms.length === 0 ? (
-                <tr><td colSpan={5} className="p-8 text-center text-muted-foreground">No rooms found</td></tr>
+                <tr><td colSpan={5} className="p-8 text-center text-muted-foreground italic">No rooms configured in system.</td></tr>
               ) : rooms.map((r) => (
-                <tr key={r._id} className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors">
-                  <td className="p-4 font-medium">{r.roomNumber}</td>
-                  <td className="p-4 text-muted-foreground">{r.type}</td>
-                  <td className="p-4 text-muted-foreground font-semibold">{formatLKR(r.pricePerNight)}</td>
+                <tr 
+                  key={r._id} 
+                  className={`border-b border-border last:border-0 hover:bg-muted/30 transition-colors cursor-pointer ${selectedRoomDetails?._id === r._id ? 'bg-primary/5' : ''}`}
+                  onClick={() => r.activeBooking && setSelectedRoomDetails(r)}
+                >
                   <td className="p-4">
-                    <select 
-                      value={r.status}
-                      onChange={(e) => updateStatus(r._id, e.target.value)}
-                      className={`rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest appearance-none cursor-pointer border shadow-sm ${
-                        r.status === "Available" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
-                        r.status === "Occupied" ? "bg-blue-50 text-blue-700 border-blue-100" :
-                        r.status === "Cleaning" ? "bg-amber-50 text-amber-700 border-amber-100" :
-                        "bg-rose-50 text-rose-700 border-rose-100"
-                      }`}
-                    >
-                      <option value="Available">Available</option>
-                      <option value="Occupied">Occupied</option>
-                      <option value="Cleaning">Cleaning</option>
-                      <option value="Maintenance">Maintenance</option>
-                    </select>
+                    <div className="flex items-center gap-3">
+                       <div className="h-10 w-10 rounded-lg bg-muted flex items-center justify-center text-sm font-bold border">
+                         {r.roomNumber}
+                       </div>
+                       <div>
+                         <p className="font-semibold">{r.type}</p>
+                         {r.activeBooking && (
+                           <p className="text-[10px] text-primary font-bold flex items-center gap-1">
+                             <User className="h-3 w-3" /> Viewing Guest Info
+                           </p>
+                         )}
+                       </div>
+                    </div>
                   </td>
-                  <td className="p-4 text-right flex items-center justify-end gap-2">
-                    <button 
-                      onClick={() => openEditModal(r)}
-                      className="p-2 rounded-lg hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors border"
-                    >
-                      <Edit3 className="h-4 w-4" />
-                    </button>
-                    <button 
-                      onClick={() => deleteRoom(r._id)}
-                      className="p-2 rounded-lg hover:bg-destructive/5 text-muted-foreground hover:text-destructive transition-colors border"
-                    >
-                      <Trash2 className="h-4 w-4" />
-                    </button>
+                  <td className="p-4">
+                    {r.activeBooking ? (
+                      <div className="space-y-0.5">
+                        <p className="text-sm font-bold text-foreground capitalize">{r.activeBooking.guestId?.name}</p>
+                        <p className="text-[10px] text-muted-foreground font-medium flex items-center gap-1">
+                           <Calendar className="h-3 w-3" /> 
+                           {new Date(r.activeBooking.checkIn).toLocaleDateString()} - {new Date(r.activeBooking.checkOut).toLocaleDateString()}
+                        </p>
+                      </div>
+                    ) : (
+                      <span className="text-xs text-muted-foreground italic">Vacant</span>
+                    )}
+                  </td>
+                  <td className="p-4 text-muted-foreground font-bold">{formatLKR(r.pricePerNight)}</td>
+                  <td className="p-4">
+                    <div className="flex flex-col gap-1.5">
+                      <select 
+                        value={r.status}
+                        onChange={(e) => {
+                          e.stopPropagation();
+                          updateStatus(r._id, e.target.value);
+                        }}
+                        className={`w-fit rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest appearance-none cursor-pointer border shadow-sm ${
+                          r.status === "Available" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
+                          r.status === "Occupied" ? "bg-blue-50 text-blue-700 border-blue-100" :
+                          r.status === "Cleaning" ? "bg-amber-50 text-amber-700 border-amber-100" :
+                          "bg-rose-50 text-rose-700 border-rose-100"
+                        }`}
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <option value="Available">Available</option>
+                        <option value="Occupied">Occupied</option>
+                        <option value="Cleaning">Cleaning</option>
+                        <option value="Maintenance">Maintenance</option>
+                      </select>
+                      
+                      {r.activeBooking && (
+                         <p className="text-[10px] font-black uppercase text-blue-600 bg-blue-100/50 w-fit px-2 py-0.5 rounded border border-blue-200">
+                           Available: {new Date(r.activeBooking.checkOut).toLocaleDateString()}
+                         </p>
+                      )}
+                      
+                      {r.status === "Available" && (
+                         <p className="text-[10px] font-black uppercase text-emerald-600">Ready for check-in</p>
+                      )}
+                    </div>
+                  </td>
+                  <td className="p-4 text-right">
+                    <div className="flex items-center justify-end gap-2">
+                       {r.activeBooking && (
+                         <button className="p-2 rounded-lg hover:bg-blue-50 text-blue-600 transition-colors border border-transparent hover:border-blue-100">
+                           <Info className="h-4 w-4" />
+                         </button>
+                       )}
+                       <button 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           openEditModal(r);
+                         }}
+                         className="p-2 rounded-lg hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors border"
+                       >
+                         <Edit3 className="h-4 w-4" />
+                       </button>
+                       <button 
+                         onClick={(e) => {
+                           e.stopPropagation();
+                           deleteRoom(r._id);
+                         }}
+                         className="p-2 rounded-lg hover:bg-destructive/5 text-muted-foreground hover:text-destructive transition-colors border"
+                       >
+                         <Trash2 className="h-4 w-4" />
+                       </button>
+                    </div>
                   </td>
                 </tr>
               ))}
             </tbody>
           </table>
+        </div>
+      )}
+
+      {/* Room Details / Occupant Modal */}
+      {selectedRoomDetails && (
+        <div className="fixed inset-0 z-[60] flex items-center justify-center bg-black/50 backdrop-blur-sm p-4 animate-in fade-in duration-200">
+           <div className="w-full max-w-sm rounded-2xl bg-card p-0 shadow-2xl border overflow-hidden animate-in zoom-in-95">
+              <div className="bg-primary p-6 text-primary-foreground">
+                 <div className="flex justify-between items-start">
+                    <div>
+                       <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Currently Occupied</p>
+                       <h3 className="text-3xl font-black tracking-tighter">Room {selectedRoomDetails.roomNumber}</h3>
+                    </div>
+                    <button onClick={() => setSelectedRoomDetails(null)} className="p-1 hover:bg-white/10 rounded-full transition-colors"><X className="h-6 w-6" /></button>
+                 </div>
+              </div>
+              
+              <div className="p-6 space-y-6">
+                 <div className="flex items-center gap-4">
+                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                       <User className="h-6 w-6" />
+                    </div>
+                    <div>
+                       <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Resident Guest</p>
+                       <h4 className="font-bold text-lg">{selectedRoomDetails.activeBooking.guestId?.name}</h4>
+                    </div>
+                 </div>
+
+                 <div className="grid grid-cols-2 gap-4 pt-4 border-t">
+                    <div className="space-y-1">
+                       <span className="text-[10px] font-black text-muted-foreground uppercase flex items-center gap-1"><Calendar className="h-3 w-3" /> Check-In</span>
+                       <p className="font-bold text-sm tracking-tight">{new Date(selectedRoomDetails.activeBooking.checkIn).toLocaleDateString()}</p>
+                    </div>
+                    <div className="space-y-1">
+                       <span className="text-[10px] font-black text-muted-foreground uppercase flex items-center gap-1"><Calendar className="h-3 w-3" /> Check-Out</span>
+                       <p className="font-bold text-sm tracking-tight text-blue-600">{new Date(selectedRoomDetails.activeBooking.checkOut).toLocaleDateString()}</p>
+                    </div>
+                 </div>
+
+                 <div className="p-4 bg-muted/30 rounded-xl border border-dashed text-center">
+                    <p className="text-[10px] font-black uppercase text-muted-foreground mb-1">Stay Duration</p>
+                    <p className="text-sm font-bold">
+                       {Math.ceil((new Date(selectedRoomDetails.activeBooking.checkOut).getTime() - new Date(selectedRoomDetails.activeBooking.checkIn).getTime()) / (1000 * 3600 * 24))} Nights
+                    </p>
+                 </div>
+
+                 <button 
+                   onClick={() => {
+                     window.location.href = `/guests?id=${selectedRoomDetails.activeBooking.guestId?._id}`;
+                   }}
+                   className="w-full py-3 bg-secondary text-secondary-foreground font-black uppercase tracking-widest text-[11px] rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-all"
+                 >
+                    <ExternalLink className="h-4 w-4" /> View Full Guest Profile
+                 </button>
+              </div>
+           </div>
         </div>
       )}
 
