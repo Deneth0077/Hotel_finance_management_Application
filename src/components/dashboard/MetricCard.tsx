@@ -8,9 +8,10 @@ interface MetricCardProps {
   changeType?: "positive" | "negative" | "neutral";
   icon: LucideIcon | React.ReactNode;
   description?: string;
+  className?: string;
 }
 
-export function MetricCard({ title, value, change, changeType = "neutral", icon: Icon, description }: MetricCardProps) {
+export function MetricCard({ title, value, change, changeType = "neutral", icon: Icon, description, className }: MetricCardProps) {
   const renderIcon = () => {
     if (!Icon) return null;
     
@@ -30,7 +31,7 @@ export function MetricCard({ title, value, change, changeType = "neutral", icon:
   };
 
   return (
-    <div className="rounded-xl bg-card p-6 shadow-card border">
+    <div className={`rounded-xl bg-card p-6 shadow-card border ${className || ""}`}>
       <div className="flex items-center justify-between">
         <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
         <div className="rounded-lg bg-muted p-2">

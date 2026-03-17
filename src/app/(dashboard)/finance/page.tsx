@@ -24,6 +24,12 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Label } from "@/components/ui/label";
 
+import BookingsPage from "../bookings/page";
+import RoomsPage from "../rooms/page";
+import TreatmentsPage from "../treatments/page";
+import StaffPage from "../staff/page";
+import InventoryPage from "../inventory/page";
+
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#14b8a6", "#6366f1"];
 
 export default function AdvancedFinancePage() {
@@ -298,10 +304,18 @@ export default function AdvancedFinancePage() {
       </div>
 
       <Tabs defaultValue="overview" className="w-full">
-        <TabsList className="grid w-full grid-cols-3 max-w-lg mb-6">
-          <TabsTrigger value="overview">Executive Overview</TabsTrigger>
-          <TabsTrigger value="ledger">Master Ledger</TabsTrigger>
-          <TabsTrigger value="pnl">Profit & Loss (P&L)</TabsTrigger>
+        <TabsList className="flex flex-wrap overflow-hidden p-1 bg-muted/40 rounded-xl mb-6 shadow-inner gap-1 border border-border/50">
+          <TabsTrigger value="overview" className="flex-1 font-bold">Executive Overview</TabsTrigger>
+          <TabsTrigger value="ledger" className="flex-1 font-bold">Master Ledger</TabsTrigger>
+          <TabsTrigger value="pnl" className="flex-1 font-bold">P&L Analytics</TabsTrigger>
+          
+          <div className="w-px h-6 bg-border mx-2 self-center hidden lg:block"></div>
+          
+          <TabsTrigger value="bookings" className="flex-1 text-xs sm:text-sm font-semibold text-blue-600 dark:text-blue-400">Bookings</TabsTrigger>
+          <TabsTrigger value="rooms" className="flex-1 text-xs sm:text-sm font-semibold text-teal-600 dark:text-teal-400">Rooms</TabsTrigger>
+          <TabsTrigger value="treatments" className="flex-1 text-xs sm:text-sm font-semibold text-purple-600 dark:text-purple-400">Treatments</TabsTrigger>
+          <TabsTrigger value="staff" className="flex-1 text-xs sm:text-sm font-semibold text-indigo-600 dark:text-indigo-400">Staff Payroll</TabsTrigger>
+          <TabsTrigger value="inventory" className="flex-1 text-xs sm:text-sm font-semibold text-amber-600 dark:text-amber-400">Inventory</TabsTrigger>
         </TabsList>
 
         <TabsContent value="overview" className="space-y-6 animate-in fade-in duration-500">
@@ -542,6 +556,42 @@ export default function AdvancedFinancePage() {
              </div>
            </div>
         </TabsContent>
+
+        <TabsContent value="bookings" className="animate-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-blue-500/20 shadow-2xl relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 w-64 h-64 bg-blue-500/5 rounded-full blur-3xl -mr-10 -mt-20 pointer-events-none"></div>
+             <BookingsPage />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="rooms" className="animate-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-teal-500/20 shadow-2xl relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 w-64 h-64 bg-teal-500/5 rounded-full blur-3xl -mr-10 -mt-20 pointer-events-none"></div>
+             <RoomsPage />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="treatments" className="animate-in slide-in-from-bottom-4 duration-500">
+           <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-purple-500/20 shadow-2xl relative overflow-hidden">
+             <div className="absolute top-0 right-0 p-8 w-64 h-64 bg-purple-500/5 rounded-full blur-3xl -mr-10 -mt-20 pointer-events-none"></div>
+             <TreatmentsPage />
+           </div>
+        </TabsContent>
+
+        <TabsContent value="staff" className="animate-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-indigo-500/20 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 w-64 h-64 bg-indigo-500/5 rounded-full blur-3xl -mr-10 -mt-20 pointer-events-none"></div>
+            <StaffPage />
+          </div>
+        </TabsContent>
+
+        <TabsContent value="inventory" className="animate-in slide-in-from-bottom-4 duration-500">
+          <div className="bg-white dark:bg-slate-900 rounded-3xl p-6 border border-amber-500/20 shadow-2xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 p-8 w-64 h-64 bg-amber-500/5 rounded-full blur-3xl -mr-10 -mt-20 pointer-events-none"></div>
+            <InventoryPage />
+          </div>
+        </TabsContent>
+        
       </Tabs>
     </div>
   );

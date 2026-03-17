@@ -3,6 +3,7 @@ import connectToDatabase from "@/lib/db";
 import Booking from "@/models/Booking";
 import "@/models/Guest"; // Ensure models are registered
 import "@/models/Room";
+import Transaction from "@/models/Transaction";
 import { createLog } from "@/lib/logger";
 
 export async function GET() {
@@ -40,6 +41,17 @@ export async function POST(request: Request) {
     }
 
     const booking = await Booking.create(body);
+    
+    // Automatically register the booking revenue in the Master Ledger Account
+    await Transaction.create({
+      type: "Income",
+      category: "Room Booking",
+      amount: booking.totalAmount, // Capture the booking cost into ledger
+      date: new Date(),
+      description: `New Reservation Revenue - Package: ${booking.package}`,
+      status: "Pending", // Because check-in isn't necessarily fully paid yet,
+      paymentMethod: "Bank Transfer"
+    });
     
     await createLog({
       userName: "System Admin",
