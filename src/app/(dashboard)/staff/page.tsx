@@ -4,8 +4,10 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Users, Plus, DollarSign, Calendar, 
   Trash2, Wallet, Sparkles, TrendingUp,
-  Search, UserCog, HeartHandshake
+  Search, UserCog, HeartHandshake, Download
 } from "lucide-react";
+import jsPDF from "jspdf";
+import autoTable from "jspdf-autotable";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { formatLKR } from "@/lib/currency";
 import { useState } from "react";
@@ -83,6 +85,70 @@ export default function StaffSalaryPage() {
     }
   });
 
+  const downloadStaffPDF = () => {
+    const doc = new jsPDF();
+    const monthYear = new Date().toLocaleString('default', { month: 'long', year: 'numeric' });
+    
+    // Set up PDF Header
+    doc.setFontSize(22);
+    doc.setTextColor(30, 41, 59); // slate-800
+    doc.text("Hotel Finance Management", 14, 20);
+    
+    doc.setFontSize(14);
+    doc.setTextColor(71, 85, 105); // slate-600
+    doc.text(`Staff Payroll Settlement Report - ${monthYear}`, 14, 28);
+    
+    doc.setDrawColor(226, 232, 240); // border-slate-200
+    doc.line(14, 32, 196, 32);
+
+    const tableData = filteredStaff.map((s: any) => [
+      s.name,
+      s.role,
+      formatLKR(s.baseSalary),
+      formatLKR(s.allowance || 0),
+      formatLKR(s.pendingTips || 0),
+      formatLKR(s.baseSalary + (s.allowance || 0) + (s.pendingTips || 0))
+    ]);
+
+    const totalPayout = filteredStaff.reduce((acc: number, s: any) => 
+      acc + (s.baseSalary + (s.allowance || 0) + (s.pendingTips || 0)), 0
+    );
+
+    autoTable(doc, {
+      startY: 38,
+      head: [['Employee', 'Role', 'Base Salary', 'Allowances', 'Tips', 'Total Payable']],
+      body: tableData,
+      theme: 'grid',
+      headStyles: { 
+        fillColor: [37, 99, 235], // blue-600
+        textColor: 255, 
+        fontSize: 10,
+        fontStyle: 'bold',
+        halign: 'left'
+      },
+      columnStyles: {
+        2: { halign: 'right' },
+        3: { halign: 'right' },
+        4: { halign: 'right' },
+        5: { halign: 'right', fontStyle: 'bold' }
+      },
+      styles: { fontSize: 9, cellPadding: 4 },
+      foot: [[
+        { content: 'Total Overall Settlement Value:', colSpan: 5, styles: { halign: 'right', fontStyle: 'bold' } },
+        { content: formatLKR(totalPayout), styles: { halign: 'right', fontStyle: 'bold', fillColor: [241, 245, 249] } }
+      ]]
+    });
+
+    // Add footer
+    const finalY = (doc as any).lastAutoTable.finalY + 10;
+    doc.setFontSize(8);
+    doc.setTextColor(148, 163, 184); // slate-400
+    doc.text(`Generated on ${new Date().toLocaleString()} | Finance Intelligence Module`, 14, finalY);
+
+    doc.save(`Staff_Payroll_${monthYear}.pdf`);
+    toast.success("Payroll PDF generated successfully!");
+  };
+
   const totalMonthlyPayout = staff.reduce((acc: number, s: any) => acc + s.baseSalary, 0);
 
   const filteredStaff = staff.filter((s: any) => 
@@ -97,12 +163,20 @@ export default function StaffSalaryPage() {
           <h1 className="text-3xl font-bold tracking-tight">Staff & Salary</h1>
           <p className="text-muted-foreground">Manage employees, payroll, tips, and allowances.</p>
         </div>
-        <button 
-          onClick={() => setIsAdding(!isAdding)}
-          className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
-        >
-          <Plus className="h-4 w-4" /> Add Member
-        </button>
+        <div className="flex gap-2">
+          <button 
+            onClick={downloadStaffPDF}
+            className="inline-flex items-center gap-2 rounded-lg border bg-background px-4 py-2.5 text-sm font-semibold hover:bg-muted transition-colors shadow-sm"
+          >
+            <Download className="h-4 w-4" /> Download Report
+          </button>
+          <button 
+            onClick={() => setIsAdding(!isAdding)}
+            className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
+          >
+            <Plus className="h-4 w-4" /> Add Member
+          </button>
+        </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -130,7 +204,7 @@ export default function StaffSalaryPage() {
               <HeartHandshake className="h-5 w-5" />
             </div>
             <div>
-              <h3 className="text-sm font-medium text-muted-foreground leading-tight">Global Tip Box</h3>
+              <h3 className="text-sm font-medium text-muted-foreground leading-tight">Tip Box</h3>
               <p className="text-xs text-muted-foreground mt-0.5">Distribute pooled tips equally</p>
             </div>
           </div>
@@ -177,7 +251,7 @@ export default function StaffSalaryPage() {
                 <th className="p-4">Employee</th>
                 <th className="p-4">Role</th>
                 <th className="p-4">Base Salary</th>
-                <th className="p-4">Dimana</th>
+                <th className="p-4">Allowances</th>
                 <th className="p-4">Pending Tips</th>
                 <th className="p-4 font-bold text-primary">Total Payable</th>
                 <th className="p-4 text-right">Actions</th>
