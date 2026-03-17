@@ -125,8 +125,10 @@ export default function RoomsPage() {
           <p className="text-2xl font-bold text-secondary">{rooms.filter(r => r.status === 'Available').length}</p>
         </div>
         <div className="rounded-xl bg-card p-6 shadow-card">
-          <p className="text-sm font-medium text-muted-foreground">Occupied</p>
-          <p className="text-2xl font-bold text-primary">{rooms.filter(r => r.status === 'Occupied').length}</p>
+          <p className="text-sm font-medium text-muted-foreground">Occupied / Reserved</p>
+          <p className="text-2xl font-bold text-primary">
+            {rooms.filter(r => r.status === 'Occupied' || r.status === 'Reserved').length}
+          </p>
         </div>
         <div className="rounded-xl bg-card p-6 shadow-card">
           <p className="text-sm font-medium text-muted-foreground">Maintenance</p>
@@ -168,7 +170,7 @@ export default function RoomsPage() {
                          <p className="font-semibold">{r.type}</p>
                          {r.activeBooking && (
                            <p className="text-[10px] text-primary font-bold flex items-center gap-1">
-                             <User className="h-3 w-3" /> Viewing Guest Info
+                             <User className="h-3 w-3" /> {r.status === "Reserved" ? "Reserved Guest" : "In-House Guest"}
                            </p>
                          )}
                        </div>
@@ -199,6 +201,7 @@ export default function RoomsPage() {
                         className={`w-fit rounded-full px-3 py-1 text-[10px] font-black uppercase tracking-widest appearance-none cursor-pointer border shadow-sm ${
                           r.status === "Available" ? "bg-emerald-50 text-emerald-700 border-emerald-100" :
                           r.status === "Occupied" ? "bg-blue-50 text-blue-700 border-blue-100" :
+                          r.status === "Reserved" ? "bg-purple-50 text-purple-700 border-purple-100" :
                           r.status === "Cleaning" ? "bg-amber-50 text-amber-700 border-amber-100" :
                           "bg-rose-50 text-rose-700 border-rose-100"
                         }`}
@@ -206,9 +209,16 @@ export default function RoomsPage() {
                       >
                         <option value="Available">Available</option>
                         <option value="Occupied">Occupied</option>
+                        <option value="Reserved">Reserved (Incoming)</option>
                         <option value="Cleaning">Cleaning</option>
                         <option value="Maintenance">Maintenance</option>
                       </select>
+                      
+                      {r.status === "Reserved" && (
+                         <p className="text-[10px] font-black uppercase text-purple-600 bg-purple-100/50 w-fit px-2 py-0.5 rounded border border-purple-200">
+                           Checking In Today
+                         </p>
+                      )}
                       
                       {r.activeBooking && (
                          <p className="text-[10px] font-black uppercase text-blue-600 bg-blue-100/50 w-fit px-2 py-0.5 rounded border border-blue-200">
@@ -278,7 +288,9 @@ export default function RoomsPage() {
               <div className="bg-primary p-6 text-primary-foreground">
                  <div className="flex justify-between items-start">
                     <div>
-                       <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">Currently Occupied</p>
+                       <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80">
+                         {selectedRoomDetails.status === "Reserved" ? "Confirmed Reservation" : "Currently Occupied"}
+                       </p>
                        <h3 className="text-3xl font-black tracking-tighter">Room {selectedRoomDetails.roomNumber}</h3>
                     </div>
                     <button onClick={() => setSelectedRoomDetails(null)} className="p-1 hover:bg-white/10 rounded-full transition-colors"><X className="h-6 w-6" /></button>
@@ -287,11 +299,13 @@ export default function RoomsPage() {
               
               <div className="p-6 space-y-6">
                  <div className="flex items-center gap-4">
-                    <div className="h-12 w-12 rounded-xl bg-primary/10 flex items-center justify-center text-primary">
+                    <div className={`h-12 w-12 rounded-xl flex items-center justify-center ${selectedRoomDetails.status === 'Reserved' ? 'bg-purple-100 text-purple-600' : 'bg-primary/10 text-primary'}`}>
                        <User className="h-6 w-6" />
                     </div>
                     <div>
-                       <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">Resident Guest</p>
+                       <p className="text-[10px] font-black uppercase text-muted-foreground tracking-widest">
+                         {selectedRoomDetails.status === "Reserved" ? "Arriving Guest" : "Resident Guest"}
+                       </p>
                        <h4 className="font-bold text-lg">{selectedRoomDetails.activeBooking.guestId?.name}</h4>
                     </div>
                  </div>
