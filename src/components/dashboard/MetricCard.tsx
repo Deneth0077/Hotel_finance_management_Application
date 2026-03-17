@@ -31,14 +31,14 @@ export function MetricCard({ title, value, change, changeType = "neutral", icon:
   };
 
   return (
-    <div className={`rounded-xl bg-card p-6 shadow-card border ${className || ""}`}>
+    <div className={`rounded-xl bg-card p-4 md:p-5 shadow-card border overflow-hidden ${className || ""}`}>
       <div className="flex items-center justify-between">
-        <h3 className="text-sm font-medium text-muted-foreground">{title}</h3>
+        <h3 className="text-[10px] font-black uppercase tracking-widest text-muted-foreground">{title}</h3>
         <div className="rounded-lg bg-muted p-2">
           {renderIcon()}
         </div>
       </div>
-      <p className="mt-2 text-3xl font-semibold tabular-nums">{value}</p>
+      <p className="mt-2 text-xl md:text-2xl font-black tabular-nums tracking-tighter truncate" title={value}>{value}</p>
       {change && (
         <p className={`mt-1 text-xs font-medium ${
           changeType === "positive" ? "text-secondary" : changeType === "negative" ? "text-destructive" : "text-muted-foreground"

@@ -305,7 +305,7 @@ export default function GuestsPage() {
                 <div className="p-6">
                   {activeTab === "overview" && (
                     <div className="space-y-6">
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
                         <MetricCard title="Total Package" value={formatLKR(finances.total)} icon={<CreditCard className="text-blue-500" />} className="bg-blue-50/50" />
                         <MetricCard title="Room Revenue" value={formatLKR(finances.room)} icon={<Calendar className="text-indigo-500" />} />
                         <MetricCard title="Wellness Share" value={formatLKR(finances.treatments)} icon={<Stethoscope className="text-rose-500" />} />
