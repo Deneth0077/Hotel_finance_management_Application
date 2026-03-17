@@ -13,6 +13,7 @@ interface BookingFormProps {
 export function BookingForm({ onClose, onSuccess, initialData }: BookingFormProps) {
   const [guests, setGuests] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
+  const [allBookings, setAllBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
     guestId: initialData?.guestId?._id || initialData?.guestId || "",
@@ -27,7 +28,40 @@ export function BookingForm({ onClose, onSuccess, initialData }: BookingFormProp
   useEffect(() => {
     fetch("/api/guests").then(res => res.json()).then(setGuests);
     fetch("/api/rooms").then(res => res.json()).then(setRooms);
+    fetch("/api/bookings").then(res => res.json()).then(setAllBookings);
   }, []);
+
+  const isRoomBooked = (roomId: string) => {
+    if (!formData.checkIn || !formData.checkOut) return false;
+    const start = new Date(formData.checkIn);
+    const end = new Date(formData.checkOut);
+
+    return allBookings.some(b => {
+      // Skip the current booking if we are editing
+      if (initialData?._id === b._id) return false;
+      if (b.roomId?._id !== roomId && b.roomId !== roomId) return false;
+      if (b.status === "Cancelled") return false;
+
+      const bStart = new Date(b.checkIn);
+      const bEnd = new Date(b.checkOut);
+
+      return (start < bEnd && end > bStart);
+    });
+  };
+
+  useEffect(() => {
+    if (formData.checkIn && formData.checkOut && formData.roomId) {
+      const room = rooms.find(r => r._id === formData.roomId);
+      if (room) {
+        const start = new Date(formData.checkIn);
+        const end = new Date(formData.checkOut);
+        const nights = Math.ceil((end.getTime() - start.getTime()) / (1000 * 3600 * 24));
+        if (nights > 0) {
+          setFormData(prev => ({ ...prev, totalAmount: nights * room.pricePerNight }));
+        }
+      }
+    }
+  }, [formData.checkIn, formData.checkOut, formData.roomId, rooms]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -83,13 +117,23 @@ export function BookingForm({ onClose, onSuccess, initialData }: BookingFormProp
             <label className="text-sm font-medium">Select Room</label>
             <select 
               required
-              className="rounded-lg border border-input bg-background p-2 text-sm"
+              className={`rounded-lg border border-input bg-background p-2 text-sm ${isRoomBooked(formData.roomId) ? 'border-destructive text-destructive' : ''}`}
               value={formData.roomId}
               onChange={e => setFormData({ ...formData, roomId: e.target.value })}
             >
-              <option value="">Choose a room...</option>
-              {rooms.map(r => <option key={r._id} value={r._id}>{r.roomNumber} - {r.type} (${r.pricePerNight}/night)</option>)}
+              <option value="">{formData.checkIn ? "Choose a room..." : "Set dates first..."}</option>
+              {rooms.map(r => {
+                const booked = isRoomBooked(r._id);
+                return (
+                  <option key={r._id} value={r._id} disabled={booked} className={booked ? "text-muted-foreground line-through" : ""}>
+                    {r.roomNumber} - {r.type} (Rs.{r.pricePerNight}/night) {booked ? "— [ALREADY BOOKED]" : ""}
+                  </option>
+                );
+              })}
             </select>
+            {isRoomBooked(formData.roomId) && (
+              <p className="text-[10px] text-destructive font-bold uppercase tracking-widest">Caution: Room is already booked for these dates!</p>
+            )}
           </div>
 
           <div className="grid gap-2">
@@ -130,14 +174,18 @@ export function BookingForm({ onClose, onSuccess, initialData }: BookingFormProp
           </div>
 
           <div className="grid gap-2">
-            <label className="text-sm font-medium">Total Amount ($)</label>
-            <input 
-              type="number" 
-              required
-              className="rounded-lg border border-input bg-background p-2 text-sm"
-              value={formData.totalAmount}
-              onChange={e => setFormData({ ...formData, totalAmount: Number(e.target.value) })}
-            />
+            <label className="text-sm font-medium">Estimated Total (LKR)</label>
+            <div className="relative">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-xs font-bold text-muted-foreground">Rs.</span>
+              <input 
+                type="number" 
+                required
+                className="w-full rounded-lg border border-input bg-background pl-10 pr-4 py-2 text-sm font-bold"
+                value={formData.totalAmount}
+                onChange={e => setFormData({ ...formData, totalAmount: Number(e.target.value) })}
+              />
+            </div>
+            <p className="text-[10px] text-muted-foreground font-medium italic">Auto-calculated based on stay duration.</p>
           </div>
 
           <div className="mt-6 flex gap-3">
