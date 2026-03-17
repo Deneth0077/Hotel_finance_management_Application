@@ -36,11 +36,27 @@ export async function GET() {
         checkOut: { $gte: now }
       }).populate("guestId").lean();
 
-      if (reservedToday) {
+      // 3. Check for the NEXT upcoming booking (For all rooms that aren't occupied today)
+      const nextBooking = await Booking.findOne({
+        roomId: room._id,
+        status: "Reserved",
+        checkIn: { $gt: now }
+      })
+      .sort({ checkIn: 1 })
+      .populate("guestId")
+      .lean();
+
+      if (nextBooking) {
+        // Calculate max stay date (Must leave 1 day early to guarantee 12h+ cleaning window)
+        const nextCheckIn = new Date(nextBooking.checkIn);
+        const availableUntil = new Date(nextCheckIn);
+        availableUntil.setDate(nextCheckIn.getDate() - 1); // Subtract 1 day for safe cleaning
+
         return {
           ...room,
-          status: "Reserved", // Visual status for UI
-          activeBooking: reservedToday
+          nextBooking,
+          nextBookingCheckIn: nextCheckIn,
+          availableUntilDate: availableUntil
         };
       }
 

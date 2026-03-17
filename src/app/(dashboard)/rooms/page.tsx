@@ -1,6 +1,6 @@
 "use client";
 
-import { BedDouble, Plus, X, Save, Edit3, Trash2, User, Calendar, ExternalLink, Info, CheckCircle2 } from "lucide-react";
+import { BedDouble, Plus, X, Save, Edit3, Trash2, User, Calendar, ExternalLink, Info, CheckCircle2, AlarmClock } from "lucide-react";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { formatLKR } from "@/lib/currency";
 import { useState, useEffect } from "react";
@@ -222,12 +222,23 @@ export default function RoomsPage() {
                       
                       {r.activeBooking && (
                          <p className="text-[10px] font-black uppercase text-blue-600 bg-blue-100/50 w-fit px-2 py-0.5 rounded border border-blue-200">
-                           Available: {new Date(r.activeBooking.checkOut).toLocaleDateString()}
+                           Checking Out: {new Date(r.activeBooking.checkOut).toLocaleDateString()}
                          </p>
                       )}
+
+                      {r.status === "Available" && r.nextBooking && (
+                        <div className="space-y-1">
+                          <p className="text-[10px] font-black uppercase text-amber-600 bg-amber-50 px-2 py-0.5 rounded border border-amber-100 w-fit flex items-center gap-1">
+                            <AlarmClock className="h-3 w-3" /> Booked from {new Date(r.nextBooking.checkIn).toLocaleDateString()}
+                          </p>
+                          <p className="text-[9px] font-bold text-muted-foreground italic">
+                            Max {Math.ceil((new Date(r.availableUntilDate).getTime() - new Date().getTime()) / (1000 * 3600 * 24))} nights (incl. 12h cleaning buffer)
+                          </p>
+                        </div>
+                      )}
                       
-                      {r.status === "Available" && (
-                         <p className="text-[10px] font-black uppercase text-emerald-600">Ready for check-in</p>
+                      {r.status === "Available" && !r.nextBooking && (
+                         <p className="text-[10px] font-black uppercase text-emerald-600">Open for all dates</p>
                       )}
                     </div>
                   </td>
