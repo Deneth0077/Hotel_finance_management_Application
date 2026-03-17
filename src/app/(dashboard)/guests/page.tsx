@@ -23,6 +23,7 @@ export default function GuestsPage() {
   const [isDetailsLoading, setIsDetailsLoading] = useState(false);
   const [activeTab, setActiveTab] = useState("overview");
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingGuestId, setEditingGuestId] = useState<string | null>(null);
   const [isSpendingModalOpen, setIsSpendingModalOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
 
@@ -78,11 +79,14 @@ export default function GuestsPage() {
     }
   }, [selectedId]);
 
-  const handleAddGuest = async (e: React.FormEvent) => {
+  const handleAddOrEditGuest = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      const res = await fetch("/api/guests", {
-        method: "POST",
+      const url = editingGuestId ? `/api/guests/${editingGuestId}` : "/api/guests";
+      const method = editingGuestId ? "PATCH" : "POST";
+      
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           ...formData,
@@ -91,13 +95,31 @@ export default function GuestsPage() {
       });
       if (res.ok) {
         setIsFormOpen(false);
+        setEditingGuestId(null);
         setFormData({ name: "", email: "", phone: "", country: "", medicalCondition: "", emergencyContact: "", notes: "" });
-        toast.success("Guest profile created");
+        toast.success(editingGuestId ? "Guest profile updated" : "Guest profile created");
         fetchGuests();
+        if (selectedId) fetchFullDetails(selectedId);
       }
     } catch (e) {
-      toast.error("Error creating guest");
+      toast.error("Error saving guest");
     }
+  };
+
+  const openEditModal = () => {
+    if (!fullGuestData?.guest) return;
+    const g = fullGuestData.guest;
+    setFormData({
+      name: g.name || "",
+      email: g.email || "",
+      phone: g.phone || "",
+      country: g.country || "",
+      medicalCondition: g.medicalCondition?.join(", ") || "",
+      emergencyContact: g.emergencyContact || "",
+      notes: g.notes || ""
+    });
+    setEditingGuestId(g._id);
+    setIsFormOpen(true);
   };
 
   const handleAddSpending = async (e: React.FormEvent) => {
@@ -247,7 +269,12 @@ export default function GuestsPage() {
                       </div>
                     </div>
                     <div className="flex gap-2">
-                       <button className="p-2 rounded-lg hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors border"><Edit3 className="h-4 w-4" /></button>
+                       <button 
+                         onClick={openEditModal}
+                         className="p-2 rounded-lg hover:bg-primary/5 text-muted-foreground hover:text-primary transition-colors border"
+                       >
+                         <Edit3 className="h-4 w-4" />
+                       </button>
                        <button className="p-2 rounded-lg hover:bg-destructive/5 text-muted-foreground hover:text-destructive transition-colors border"><Trash2 className="h-4 w-4" /></button>
                     </div>
                   </div>
@@ -500,13 +527,21 @@ export default function GuestsPage() {
               <div className="flex items-center gap-3">
                  <div className="p-2.5 bg-primary/10 rounded-xl text-primary"><User className="h-6 w-6" /></div>
                  <div>
-                    <h2 className="text-xl font-black uppercase tracking-tighter">New Guest Profile</h2>
-                    <p className="text-xs text-muted-foreground font-medium">Create a baseline record for checking-in.</p>
+                    <h2 className="text-xl font-black uppercase tracking-tighter">{editingGuestId ? "Edit Guest Profile" : "New Guest Profile"}</h2>
+                    <p className="text-xs text-muted-foreground font-medium">{editingGuestId ? "Modify existing guest records." : "Create a baseline record for checking-in."}</p>
                  </div>
               </div>
-              <button onClick={() => setIsFormOpen(false)} className="rounded-full p-2 hover:bg-muted transition-colors"><X className="h-5 w-5" /></button>
+              <button 
+                onClick={() => {
+                  setIsFormOpen(false);
+                  setEditingGuestId(null);
+                }} 
+                className="rounded-full p-2 hover:bg-muted transition-colors"
+              >
+                <X className="h-5 w-5" />
+              </button>
             </div>
-            <form onSubmit={handleAddGuest} className="space-y-5">
+            <form onSubmit={handleAddOrEditGuest} className="space-y-5">
               <div className="space-y-2">
                 <label className="text-[10px] font-black uppercase text-muted-foreground tracking-widest ml-1">Full Name *</label>
                 <div className="relative">
@@ -543,8 +578,19 @@ export default function GuestsPage() {
               </div>
               
               <div className="flex gap-4 pt-6">
-                <button type="button" onClick={() => setIsFormOpen(false)} className="flex-1 rounded-xl border py-3 text-xs font-black uppercase tracking-widest hover:bg-muted transition-all">Dismiss</button>
-                <button type="submit" className="flex-1 rounded-xl bg-primary py-3 text-xs font-black uppercase tracking-widest text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-2"><Save className="h-4 w-4" /> Finalize Profile</button>
+                <button 
+                  type="button" 
+                  onClick={() => {
+                    setIsFormOpen(false);
+                    setEditingGuestId(null);
+                  }} 
+                  className="flex-1 rounded-xl border py-3 text-xs font-black uppercase tracking-widest hover:bg-muted transition-all"
+                >
+                  Dismiss
+                </button>
+                <button type="submit" className="flex-1 rounded-xl bg-primary py-3 text-xs font-black uppercase tracking-widest text-primary-foreground hover:bg-primary/90 shadow-xl shadow-primary/20 transition-all flex items-center justify-center gap-2">
+                  <Save className="h-4 w-4" /> {editingGuestId ? "Update Profile" : "Finalize Profile"}
+                </button>
               </div>
             </form>
           </div>
