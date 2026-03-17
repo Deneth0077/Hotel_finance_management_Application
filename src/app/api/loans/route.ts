@@ -2,6 +2,7 @@ import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import Loan from "@/models/Loan";
 import Transaction from "@/models/Transaction";
+import { createLog } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -39,6 +40,15 @@ export async function POST(request: Request) {
     }];
     
     const loan = await Loan.create(body);
+    
+    await createLog({
+      userName: "System Admin",
+      userRole: "Finance Officer",
+      action: "Created Debt Facility",
+      details: `Setup new facility: ${loan.name} for RS ${loan.principalAmount}`,
+      path: "/loans"
+    });
+
     return NextResponse.json(loan, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });

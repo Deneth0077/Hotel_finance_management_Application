@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import Loan from "@/models/Loan";
+import { createLog } from "@/lib/logger";
 
 export async function PATCH(
   request: Request,
@@ -34,6 +35,15 @@ export async function PATCH(
     };
 
     const updatedLoan = await Loan.findByIdAndUpdate(id, body, { new: true });
+    
+    await createLog({
+      userName: "System Admin",
+      userRole: "Finance Officer",
+      action: "Modified Debt Facility",
+      details: `Updated facility: ${updatedLoan.name}`,
+      path: "/loans"
+    });
+
     return NextResponse.json(updatedLoan);
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 500 });
@@ -52,6 +62,14 @@ export async function DELETE(
     if (!loan) {
       return NextResponse.json({ error: "Loan not found" }, { status: 404 });
     }
+
+    await createLog({
+      userName: "System Admin",
+      userRole: "Finance Officer",
+      action: "Voided Debt Facility",
+      details: `Permanently removed facility: ${loan.name}`,
+      path: "/loans"
+    });
 
     return NextResponse.json({ message: "Loan deleted successfully" });
   } catch (error: any) {

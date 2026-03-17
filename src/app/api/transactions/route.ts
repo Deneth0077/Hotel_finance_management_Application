@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import Transaction from "@/models/Transaction";
+import { createLog } from "@/lib/logger";
 
 export async function GET(request: Request) {
   try {
@@ -25,6 +26,15 @@ export async function POST(request: Request) {
     await connectToDatabase();
     const body = await request.json();
     const transaction = await Transaction.create(body);
+    
+    await createLog({
+      userName: "System Admin",
+      userRole: "Finance Officer",
+      action: "Posted Ledger Entry",
+      details: `Recorded ${transaction.category} (${transaction.type}): RS ${transaction.amount}`,
+      path: "/finance"
+    });
+
     return NextResponse.json(transaction, { status: 201 });
   } catch (error: any) {
     return NextResponse.json({ error: error.message }, { status: 400 });

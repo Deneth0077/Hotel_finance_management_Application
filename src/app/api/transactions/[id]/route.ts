@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import Transaction from "@/models/Transaction";
+import { createLog } from "@/lib/logger";
 
 export async function DELETE(
   request: Request,
@@ -16,6 +17,14 @@ export async function DELETE(
     if (!transaction) {
       return NextResponse.json({ error: "Transaction not found in ledger" }, { status: 404 });
     }
+
+    await createLog({
+      userName: "System Admin",
+      userRole: "Finance Officer",
+      action: "Voided Ledger Entry",
+      details: `Removed transaction: ${transaction.description}`,
+      path: "/finance"
+    });
 
     return NextResponse.json({ message: "Transaction voided successfully from ledger", transaction });
   } catch (error: any) {
@@ -37,6 +46,14 @@ export async function PATCH(
     if (!transaction) {
       return NextResponse.json({ error: "Transaction not found" }, { status: 404 });
     }
+
+    await createLog({
+      userName: "System Admin",
+      userRole: "Finance Officer",
+      action: "Modified Ledger Entry",
+      details: `Updated entry: ${transaction.description}`,
+      path: "/finance"
+    });
 
     return NextResponse.json(transaction);
   } catch (error) {
