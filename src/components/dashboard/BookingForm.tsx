@@ -7,20 +7,21 @@ import { toast } from "sonner";
 interface BookingFormProps {
   onClose: () => void;
   onSuccess: () => void;
+  initialData?: any;
 }
 
-export function BookingForm({ onClose, onSuccess }: BookingFormProps) {
+export function BookingForm({ onClose, onSuccess, initialData }: BookingFormProps) {
   const [guests, setGuests] = useState<any[]>([]);
   const [rooms, setRooms] = useState<any[]>([]);
   const [loading, setLoading] = useState(false);
   const [formData, setFormData] = useState({
-    guestId: "",
-    roomId: "",
-    package: "7-Day Rejuvenate",
-    checkIn: "",
-    checkOut: "",
-    totalAmount: 0,
-    status: "Reserved",
+    guestId: initialData?.guestId?._id || initialData?.guestId || "",
+    roomId: initialData?.roomId?._id || initialData?.roomId || "",
+    package: initialData?.package || "7-Day Rejuvenate",
+    checkIn: initialData?.checkIn ? new Date(initialData.checkIn).toISOString().split('T')[0] : "",
+    checkOut: initialData?.checkOut ? new Date(initialData.checkOut).toISOString().split('T')[0] : "",
+    totalAmount: initialData?.totalAmount || 0,
+    status: initialData?.status || "Reserved",
   });
 
   useEffect(() => {
@@ -32,15 +33,17 @@ export function BookingForm({ onClose, onSuccess }: BookingFormProps) {
     e.preventDefault();
     setLoading(true);
     try {
-      const res = await fetch("/api/bookings", {
-        method: "POST",
+      const url = initialData ? `/api/bookings/${initialData._id}` : "/api/bookings";
+      const method = initialData ? "PATCH" : "POST";
+      const res = await fetch(url, {
+        method,
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(formData),
       });
       if (res.ok) {
         onSuccess();
         onClose();
-        toast.success("Booking created successfully!");
+        toast.success(initialData ? "Booking updated successfully!" : "Booking created successfully!");
       } else {
         const err = await res.json();
         toast.error(err.error || "Failed to create booking");
@@ -56,7 +59,7 @@ export function BookingForm({ onClose, onSuccess }: BookingFormProps) {
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-foreground/20 backdrop-blur-sm p-4">
       <div className="w-full max-w-lg rounded-xl bg-card p-6 shadow-xl">
         <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-bold">New Booking</h2>
+          <h2 className="text-xl font-bold">{initialData ? "Edit Booking" : "New Booking"}</h2>
           <button onClick={onClose} className="rounded-lg p-1 hover:bg-muted">
             <X className="h-5 w-5" />
           </button>
@@ -150,7 +153,7 @@ export function BookingForm({ onClose, onSuccess }: BookingFormProps) {
               disabled={loading}
               className="flex-1 rounded-lg bg-primary py-2 text-sm font-semibold text-primary-foreground hover:bg-primary/90 disabled:opacity-50"
             >
-              {loading ? "Creating..." : "Confirm Booking"}
+              {loading ? "Saving..." : initialData ? "Update Booking" : "Confirm Booking"}
             </button>
           </div>
         </form>

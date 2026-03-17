@@ -1,6 +1,6 @@
 "use client";
 
-import { Search, Plus, Filter, Calendar as CalendarIcon, MoreVertical, Trash2 } from "lucide-react";
+import { Search, Plus, Filter, Calendar as CalendarIcon, MoreVertical, Trash2, Edit } from "lucide-react";
 import { StatusBadge } from "@/components/dashboard/StatusBadge";
 import { useState, useEffect } from "react";
 import { BookingForm } from "@/components/dashboard/BookingForm";
@@ -11,6 +11,7 @@ import { toast } from "sonner";
 export default function BookingsPage() {
   const [view, setView] = useState<"table" | "calendar">("table");
   const [isFormOpen, setIsFormOpen] = useState(false);
+  const [editingBooking, setEditingBooking] = useState<any>(null);
   const [bookings, setBookings] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -84,7 +85,7 @@ export default function BookingsPage() {
           <p className="text-muted-foreground">Manage guest stays, room availability, and check-ins.</p>
         </div>
         <button 
-          onClick={() => setIsFormOpen(true)}
+          onClick={() => { setEditingBooking(null); setIsFormOpen(true); }}
           className="inline-flex items-center gap-2 rounded-lg bg-primary px-4 py-2.5 text-sm font-semibold text-primary-foreground hover:bg-primary/90 transition-colors shadow-sm"
         >
           <Plus className="h-4 w-4" /> Create Booking
@@ -197,6 +198,9 @@ export default function BookingsPage() {
                     </select>
                   </td>
                   <td className="p-4 text-right">
+                    <button onClick={() => { setEditingBooking(b); setIsFormOpen(true); }} className="text-amber-500 hover:text-amber-600 p-2">
+                      <Edit className="h-4 w-4" />
+                    </button>
                     <button onClick={() => deleteBooking(b._id)} className="text-destructive hover:text-destructive/80 p-2">
                       <Trash2 className="h-4 w-4" />
                     </button>
@@ -210,7 +214,13 @@ export default function BookingsPage() {
         <BookingCalendar bookings={bookings} />
       )}
 
-      {isFormOpen && <BookingForm onClose={() => setIsFormOpen(false)} onSuccess={fetchBookings} />}
+      {isFormOpen && (
+        <BookingForm 
+          onClose={() => { setIsFormOpen(false); setEditingBooking(null); }} 
+          onSuccess={fetchBookings} 
+          initialData={editingBooking}
+        />
+      )}
     </div>
   );
 }

@@ -3,6 +3,7 @@ import connectToDatabase from "@/lib/db";
 import Booking from "@/models/Booking";
 import "@/models/Guest"; // Ensure models are registered
 import "@/models/Room";
+import { createLog } from "@/lib/logger";
 
 export async function GET() {
   try {
@@ -39,6 +40,15 @@ export async function POST(request: Request) {
     }
 
     const booking = await Booking.create(body);
+    
+    await createLog({
+      userName: "System Admin",
+      userRole: "Front Desk",
+      action: "Created Booking",
+      details: `New reservation for package: ${booking.package}`,
+      path: "/bookings"
+    });
+
     return NextResponse.json(booking, { status: 201 });
   } catch (error) {
     console.error("POST Error:", error);
