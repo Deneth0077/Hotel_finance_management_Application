@@ -89,28 +89,15 @@ export function StaffForm({ onClose, onSuccess, initialData }: StaffFormProps) {
             />
           </div>
 
-          <div className="grid grid-cols-2 gap-4">
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Base Salary (LKR) *</label>
-              <input
-                type="number"
-                required
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                value={formData.baseSalary}
-                onChange={(e) => setFormData({ ...formData, baseSalary: Number(e.target.value) })}
-              />
-            </div>
-            <div className="space-y-2">
-              <label className="text-sm font-semibold">Pay Day (1-31)</label>
-              <input
-                type="number"
-                min="1"
-                max="31"
-                className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-                value={formData.salaryPayDay}
-                onChange={(e) => setFormData({ ...formData, salaryPayDay: Number(e.target.value) })}
-              />
-            </div>
+          <div className="space-y-2">
+            <label className="text-sm font-semibold">Base Salary (LKR) *</label>
+            <input
+              type="number"
+              required
+              className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+              value={formData.baseSalary}
+              onChange={(e) => setFormData({ ...formData, baseSalary: Number(e.target.value) })}
+            />
           </div>
 
           <div className="space-y-2">
