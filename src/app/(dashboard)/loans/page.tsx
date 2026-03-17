@@ -4,11 +4,12 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   CreditCard, Calendar, Landmark, 
   ArrowRightCircle, CheckCircle2, AlertCircle,
-  Plus, History, DollarSign, Clock, Percent, Activity
+  Plus, History, DollarSign, Clock, Percent, Activity,
+  Trash2, Edit, FileText
 } from "lucide-react";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { formatLKR } from "@/lib/currency";
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -19,6 +20,10 @@ import { toast } from "sonner";
 export default function LoansPage() {
   const queryClient = useQueryClient();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [editModalOpen, setEditModalOpen] = useState(false);
+  const [logsModalOpen, setLogsModalOpen] = useState(false);
+  const [editLoanId, setEditLoanId] = useState<string | null>(null);
+  const [selectedLogs, setSelectedLogs] = useState<any[]>([]);
   
   // Finance analytics to determine Monthly Income for burden calculation
   const { data: financeData } = useQuery({
@@ -49,16 +54,10 @@ export default function LoansPage() {
     return total / incomeStats.length;
   }, [financeData]);
 
-  const [form, setForm] = useState({
-    name: "",
-    type: "Bank Loan",
-    lender: "",
-    principalAmount: "",
-    interestRate: "",
-    tenureMonths: "",
-    startDate: new Date().toISOString().split('T')[0],
-    repaymentDay: "1"
-  });
+  const initialFormState = {
+    name: "", type: "Bank Loan", lender: "", principalAmount: "", interestRate: "", tenureMonths: "", startDate: new Date().toISOString().split('T')[0], repaymentDay: "1", status: "Active"
+  };
+  const [form, setForm] = useState(initialFormState);
 
   // PMT Auto Loan Calculation Core Logic
   const calculatedInstallment = useMemo(() => {
@@ -78,7 +77,6 @@ export default function LoansPage() {
   }, [form.principalAmount, form.interestRate, form.tenureMonths]);
 
   // Debt Burden Percentage
-  // How much of the average monthly revenue does this new loan represent?
   const burdenPercentage = averageMonthlyIncome > 1 
     ? (calculatedInstallment / averageMonthlyIncome) * 100 
     : 0;
@@ -97,12 +95,64 @@ export default function LoansPage() {
       queryClient.invalidateQueries({ queryKey: ["loans"] });
       toast.success("New loan/lease agreement recorded securely!");
       setIsModalOpen(false);
-      setForm({
-        name: "", type: "Bank Loan", lender: "", principalAmount: "", interestRate: "", tenureMonths: "", startDate: new Date().toISOString().split('T')[0], repaymentDay: "1"
-      });
+      setForm(initialFormState);
     },
     onError: (err: any) => toast.error(`Error: ${err.message}`)
   });
+
+  const updateLoanMutation = useMutation({
+    mutationFn: async ({ id, data }: { id: string, data: any }) => {
+      const res = await fetch(`/api/loans/${id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(data),
+      });
+      if (!res.ok) throw new Error("Failed to update loan");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
+      toast.success("Facility details securely updated!");
+      setEditModalOpen(false);
+      setEditLoanId(null);
+      setForm(initialFormState);
+    },
+    onError: (err: any) => toast.error(`Error: ${err.message}`)
+  });
+
+  const deleteLoanMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const res = await fetch(`/api/loans/${id}`, { method: "DELETE" });
+      if (!res.ok) throw new Error("Failed to void debt facility");
+      return res.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["loans"] });
+      toast.success("Facility removed successfully.");
+    },
+    onError: (err: any) => toast.error(`Error: ${err.message}`)
+  });
+
+  const handleEditClick = (loan: any) => {
+    setEditLoanId(loan._id);
+    setForm({
+      name: loan.name,
+      type: loan.type,
+      lender: loan.lender,
+      principalAmount: loan.principalAmount.toString(),
+      interestRate: loan.interestRate.toString(),
+      tenureMonths: loan.tenureMonths.toString(),
+      startDate: new Date(loan.startDate).toISOString().split('T')[0],
+      repaymentDay: loan.repaymentDay.toString(),
+      status: loan.status
+    });
+    setEditModalOpen(true);
+  };
+
+  const handleLogsClick = (auditLog: any[]) => {
+    setSelectedLogs(auditLog || []);
+    setLogsModalOpen(true);
+  };
 
   const onSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -110,15 +160,108 @@ export default function LoansPage() {
       return toast.error("Please fill in all required facility details.");
     }
     
-    createLoanMutation.mutate({
+    const payload = {
       ...form,
       principalAmount: Number(form.principalAmount),
       interestRate: Number(form.interestRate || 0),
       tenureMonths: Number(form.tenureMonths),
       repaymentDay: Number(form.repaymentDay),
       monthlyInstallment: calculatedInstallment
-    });
+    };
+
+    if (editLoanId) {
+      updateLoanMutation.mutate({ id: editLoanId, data: payload });
+    } else {
+      createLoanMutation.mutate(payload);
+    }
   };
+
+  const renderFormFields = () => (
+    <>
+      <div className="space-y-4">
+        <div className="space-y-2">
+          <Label>Facility Name</Label>
+          <Input placeholder="e.g. Commercial Bank Term Loan" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} />
+        </div>
+        
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Facility Type</Label>
+            <Select value={form.type} onValueChange={(v) => setForm({...form, type: v})}>
+              <SelectTrigger><SelectValue/></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Bank Loan">Bank Term Loan</SelectItem>
+                <SelectItem value="Leasing">Vehicle/Equip Lease</SelectItem>
+                <SelectItem value="Personal Loan">Personal Loan</SelectItem>
+                <SelectItem value="Credit Line">Revolving Credit</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Lender / Bank</Label>
+            <Input placeholder="e.g. BOC, HNB, People's Bank" value={form.lender} onChange={(e) => setForm({...form, lender: e.target.value})} />
+          </div>
+        </div>
+
+        <div className="space-y-2">
+          <Label>Principal Amount Received</Label>
+          <div className="relative">
+            <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">RS</span>
+            <Input type="number" step="1000" className="pl-9" placeholder="0.00" value={form.principalAmount} onChange={(e) => setForm({...form, principalAmount: e.target.value})} />
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Annual Interest Rate (%)</Label>
+            <div className="relative">
+              <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input type="number" step="0.01" className="pl-9" placeholder="12.5" value={form.interestRate} onChange={(e) => setForm({...form, interestRate: e.target.value})} />
+            </div>
+          </div>
+          <div className="space-y-2">
+            <Label>Tenure (Months)</Label>
+            <div className="relative">
+              <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <Input type="number" className="pl-9" placeholder="60 (e.g. 5 Years)" value={form.tenureMonths} onChange={(e) => setForm({...form, tenureMonths: e.target.value})} />
+            </div>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-2 gap-4">
+          <div className="space-y-2">
+            <Label>Repayment Day</Label>
+            <Select value={form.repaymentDay.toString()} onValueChange={(v) => setForm({...form, repaymentDay: v})}>
+              <SelectTrigger><SelectValue/></SelectTrigger>
+              <SelectContent>
+                {[1, 5, 10, 15, 20, 25, 28].map(day => (
+                  <SelectItem key={day} value={day.toString()}>Day {day} of month</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+          <div className="space-y-2">
+            <Label>Agreement Start</Label>
+            <Input type="date" value={form.startDate} onChange={(e) => setForm({...form, startDate: e.target.value})} />
+          </div>
+        </div>
+
+        {editLoanId && (
+          <div className="space-y-2 border-t pt-4 mt-2 border-slate-200 dark:border-slate-800">
+            <Label>Facility Status</Label>
+            <Select value={form.status} onValueChange={(v) => setForm({...form, status: v})}>
+              <SelectTrigger><SelectValue/></SelectTrigger>
+              <SelectContent>
+                <SelectItem value="Active">Active (Repaying)</SelectItem>
+                <SelectItem value="Settled">Settled (Closed)</SelectItem>
+                <SelectItem value="Defaulted">Defaulted (Arrears)</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        )}
+      </div>
+    </>
+  );
 
   return (
     <div className="space-y-6">
@@ -128,7 +271,10 @@ export default function LoansPage() {
           <p className="text-muted-foreground">Manage banking facilities, vehicle leases, and structured debt.</p>
         </div>
         
-        <Dialog open={isModalOpen} onOpenChange={setIsModalOpen}>
+        <Dialog open={isModalOpen} onOpenChange={(v) => {
+          if(!v) { setForm(initialFormState); setEditLoanId(null); }
+          setIsModalOpen(v);
+        }}>
           <DialogTrigger asChild>
             <Button className="bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white shadow-lg border-0">
               <Plus className="h-4 w-4 mr-2" /> New Setup
@@ -144,72 +290,7 @@ export default function LoansPage() {
               
               {/* Form Side */}
               <div className="md:col-span-3 space-y-4">
-                <div className="space-y-2">
-                  <Label>Facility Name</Label>
-                  <Input placeholder="e.g. Commercial Bank Term Loan" value={form.name} onChange={(e) => setForm({...form, name: e.target.value})} />
-                </div>
-                
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Facility Type</Label>
-                    <Select value={form.type} onValueChange={(v) => setForm({...form, type: v})}>
-                      <SelectTrigger><SelectValue/></SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="Bank Loan">Bank Term Loan</SelectItem>
-                        <SelectItem value="Leasing">Vehicle/Equip Lease</SelectItem>
-                        <SelectItem value="Personal Loan">Personal Loan</SelectItem>
-                        <SelectItem value="Credit Line">Revolving Credit</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Lender / Bank</Label>
-                    <Input placeholder="e.g. BOC, HNB, People's Bank" value={form.lender} onChange={(e) => setForm({...form, lender: e.target.value})} />
-                  </div>
-                </div>
-
-                <div className="space-y-2">
-                  <Label>Principal Amount Received</Label>
-                  <div className="relative">
-                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">RS</span>
-                    <Input type="number" step="1000" className="pl-9" placeholder="0.00" value={form.principalAmount} onChange={(e) => setForm({...form, principalAmount: e.target.value})} />
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Annual Interest Rate (%)</Label>
-                    <div className="relative">
-                      <Percent className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input type="number" step="0.01" className="pl-9" placeholder="12.5" value={form.interestRate} onChange={(e) => setForm({...form, interestRate: e.target.value})} />
-                    </div>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Tenure (Months)</Label>
-                    <div className="relative">
-                      <Clock className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                      <Input type="number" className="pl-9" placeholder="60 (e.g. 5 Years)" value={form.tenureMonths} onChange={(e) => setForm({...form, tenureMonths: e.target.value})} />
-                    </div>
-                  </div>
-                </div>
-
-                <div className="grid grid-cols-2 gap-4">
-                  <div className="space-y-2">
-                    <Label>Repayment Day</Label>
-                    <Select value={form.repaymentDay.toString()} onValueChange={(v) => setForm({...form, repaymentDay: v})}>
-                      <SelectTrigger><SelectValue/></SelectTrigger>
-                      <SelectContent>
-                        {[1, 5, 10, 15, 20, 25, 28].map(day => (
-                          <SelectItem key={day} value={day.toString()}>Day {day} of month</SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  <div className="space-y-2">
-                    <Label>Agreement Start</Label>
-                    <Input type="date" value={form.startDate} onChange={(e) => setForm({...form, startDate: e.target.value})} />
-                  </div>
-                </div>
+                {renderFormFields()}
               </div>
 
               {/* Real-time Calculation Intelligence Side */}
@@ -222,7 +303,7 @@ export default function LoansPage() {
                   
                   <div className="space-y-6">
                     <div>
-                      <p className="text-xs text-slate-400 font-medium">Auto-Calculated Monthly Installment</p>
+                      <p className="text-xs text-slate-400 font-medium">Auto-Calculated Installment</p>
                       <p className="text-3xl font-extrabold text-white mt-1">
                         {formatLKR(calculatedInstallment)}
                       </p>
@@ -230,7 +311,7 @@ export default function LoansPage() {
 
                     <div className="pt-4 border-t border-slate-700">
                       <div className="flex justify-between items-end mb-2">
-                        <p className="text-xs text-slate-400 font-medium">Income Risk Assessment</p>
+                        <p className="text-xs text-slate-400 font-medium">Income Risk</p>
                         <p className={`text-sm font-bold ${burdenPercentage > 30 ? 'text-rose-400' : 'text-emerald-400'}`}>
                           {burdenPercentage.toFixed(1)}% Burden
                         </p>
@@ -243,40 +324,96 @@ export default function LoansPage() {
                           style={{ width: `${Math.min(burdenPercentage, 100)}%` }} 
                         />
                       </div>
-                      
-                      <p className="text-[10px] text-slate-500 mt-2 leading-tight">
-                        {averageMonthlyIncome > 1 
-                          ? `This loan will consume ${Math.min(burdenPercentage, 100).toFixed(1)}% of your average hotel monthly revenue (${formatLKR(averageMonthlyIncome)}).` 
-                          : "Processing revenue data to structure risk..."}
-                      </p>
-
-                      {burdenPercentage > 35 ? (
-                        <div className="mt-3 p-2 bg-rose-500/20 border border-rose-500/30 rounded text-xs text-rose-200 flex items-start gap-2">
-                          <AlertCircle className="h-4 w-4 shrink-0 mt-0.5" />
-                          <p>Warning: This installment exceeds safe threshold. Consider increasing the tenure.</p>
-                        </div>
-                      ) : (
-                         <div className="mt-3 p-2 bg-emerald-500/10 border border-emerald-500/20 rounded text-xs text-emerald-200 flex items-start gap-2">
-                          <CheckCircle2 className="h-4 w-4 shrink-0 mt-0.5" />
-                          <p>Safe capability. This facility is well within your operating cashflow.</p>
-                        </div>
-                      )}
                     </div>
                   </div>
                 </div>
 
                 <Button 
                   onClick={onSubmit} 
-                  disabled={createLoanMutation.isPending || !form.name || !form.principalAmount}
+                  disabled={createLoanMutation.isPending || updateLoanMutation.isPending || !form.name || !form.principalAmount}
                   className="w-full bg-primary hover:bg-primary/90 py-6 text-sm font-bold shadow-xl"
                 >
-                  {createLoanMutation.isPending ? "Configuring Ledger..." : "Activate Debt Line Setup"}
+                  {createLoanMutation.isPending ? "Configuring..." : "Activate Setup"}
                 </Button>
               </div>
 
             </div>
           </DialogContent>
         </Dialog>
+
+        {/* Edit Modal standalone */}
+        <Dialog open={editModalOpen} onOpenChange={(v) => {
+          if(!v) { setForm(initialFormState); setEditLoanId(null); }
+          setEditModalOpen(v);
+        }}>
+          <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-2xl flex items-center gap-2">
+                <Edit className="h-5 w-5 text-primary" /> Edit Facility '{form.name}'
+              </DialogTitle>
+            </DialogHeader>
+            <div className="grid grid-cols-1 md:grid-cols-5 gap-6 pt-4">
+              <div className="md:col-span-3 space-y-4">
+                {renderFormFields()}
+              </div>
+              <div className="md:col-span-2 space-y-4">
+                 <div className="bg-slate-900 text-white rounded-xl p-5 shadow-inner border border-slate-700">
+                  <div className="flex items-center gap-2 mb-4 text-emerald-400">
+                    <Activity className="h-5 w-5" /> 
+                    <h4 className="font-bold text-sm uppercase tracking-wider">AI Intelligence</h4>
+                  </div>
+                  <div>
+                    <p className="text-xs text-slate-400 font-medium">Re-Calculated Installment</p>
+                    <p className="text-3xl font-extrabold text-white mt-1">
+                      {formatLKR(calculatedInstallment)}
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  onClick={onSubmit} 
+                  disabled={updateLoanMutation.isPending || !form.name || !form.principalAmount}
+                  className="w-full bg-primary hover:bg-primary/90 py-6 text-sm font-bold shadow-xl"
+                >
+                  {updateLoanMutation.isPending ? "Updating..." : "Save Changes via Audit Log"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Audit Logs Modal */}
+        <Dialog open={logsModalOpen} onOpenChange={setLogsModalOpen}>
+           <DialogContent className="sm:max-w-[500px] max-h-[80vh] overflow-y-auto">
+            <DialogHeader>
+              <DialogTitle className="text-xl flex items-center gap-2">
+                <FileText className="h-5 w-5 text-indigo-500" /> Facility Change Logs
+              </DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4 pt-4">
+              {selectedLogs.length === 0 ? (
+                <div className="text-center p-8 text-muted-foreground italic bg-muted/30 rounded-lg">
+                  No modifications have been recorded for this facility yet.
+                </div>
+              ) : (
+                <div className="relative border-l-2 border-border ml-3 space-y-6 pb-4">
+                  {[...selectedLogs].reverse().map((log: any, idx: number) => (
+                    <div key={idx} className="relative pl-6">
+                      <div className="absolute w-3 h-3 bg-indigo-500 rounded-full -left-[7px] top-1 ring-4 ring-background"></div>
+                      <div className="flex flex-col space-y-1">
+                        <div className="flex items-center justify-between">
+                          <span className="font-bold text-sm text-foreground">{log.action || 'Updated'}</span>
+                          <span className="text-xs text-muted-foreground">{new Date(log.timestamp).toLocaleString()}</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground leading-relaxed bg-muted/40 p-2 rounded border">{log.details}</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+          </DialogContent>
+        </Dialog>
+
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
@@ -319,13 +456,14 @@ export default function LoansPage() {
                 <th className="p-4 font-semibold text-muted-foreground">Repayment Date</th>
                 <th className="p-4 font-semibold text-muted-foreground">Remaining Balance</th>
                 <th className="p-4 font-semibold text-muted-foreground">Status</th>
+                <th className="p-4 font-semibold text-muted-foreground text-right">Actions</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-border/50">
               {isLoading ? (
-                <tr><td colSpan={6} className="p-12 text-center text-muted-foreground animate-pulse">Syncing debt structures...</td></tr>
+                <tr><td colSpan={7} className="p-12 text-center text-muted-foreground animate-pulse">Syncing debt structures...</td></tr>
               ) : loans.length === 0 ? (
-                <tr><td colSpan={6} className="p-12 text-center text-muted-foreground italic">No active debt registered. Your capital is pure!</td></tr>
+                <tr><td colSpan={7} className="p-12 text-center text-muted-foreground italic">No active debt registered. Your capital is pure!</td></tr>
               ) : loans.map((loan: any) => {
                 const totalMonths = loan.tenureMonths;
                 const remainingMonths = Math.ceil(loan.remainingBalance / (loan.monthlyInstallment || 1));
@@ -365,6 +503,23 @@ export default function LoansPage() {
                         {loan.status === "Active" ? <ArrowRightCircle className="h-3.5 w-3.5" /> : <CheckCircle2 className="h-3.5 w-3.5" />}
                         {loan.status}
                       </span>
+                    </td>
+                    <td className="p-4 text-right">
+                      <div className="flex items-center justify-end gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                         <Button variant="ghost" size="icon" className="h-7 w-7 text-indigo-500 hover:text-indigo-600 hover:bg-indigo-50 dark:hover:bg-indigo-950/50" onClick={() => handleLogsClick(loan.auditLog)} title="View Change History">
+                          <FileText className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-amber-500 hover:text-amber-600 hover:bg-amber-50 dark:hover:bg-amber-950/50" onClick={() => handleEditClick(loan)} title="Edit Configuration">
+                          <Edit className="h-3.5 w-3.5" />
+                        </Button>
+                        <Button variant="ghost" size="icon" className="h-7 w-7 text-rose-500 hover:text-rose-600 hover:bg-rose-50 dark:hover:bg-rose-950/50" onClick={() => {
+                          if (confirm(`Are you sure you want to completely remove '${loan.name}'?`)) {
+                            deleteLoanMutation.mutate(loan._id);
+                          }
+                        }} title="Void Facility">
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
                     </td>
                   </tr>
                 );

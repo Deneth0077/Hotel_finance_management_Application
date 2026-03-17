@@ -32,6 +32,12 @@ export async function POST(request: Request) {
       body.remainingBalance = body.principalAmount;
     }
     
+    body.auditLog = [{
+      action: "Created",
+      details: "Initial structured setup.",
+      timestamp: new Date()
+    }];
+    
     const loan = await Loan.create(body);
     return NextResponse.json(loan, { status: 201 });
   } catch (error: any) {

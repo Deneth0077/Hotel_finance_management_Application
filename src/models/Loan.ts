@@ -25,6 +25,11 @@ const LoanSchema = new mongoose.Schema({
     date: { type: Date, default: Date.now },
     amount: { type: Number },
     transactionId: { type: mongoose.Schema.Types.ObjectId, ref: "Transaction" }
+  }],
+  auditLog: [{
+    action: { type: String }, // e.g. "Created", "Updated", "Deleted"
+    timestamp: { type: Date, default: Date.now },
+    details: { type: String }
   }]
 }, { timestamps: true });
 
