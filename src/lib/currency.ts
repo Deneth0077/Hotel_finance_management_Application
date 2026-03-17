@@ -17,7 +17,7 @@ export const formatLKR = (amount: number) => {
     style: "currency",
     currency: "LKR",
     minimumFractionDigits: 0,
-  }).format(amount * USD_TO_LKR_RATE);
+  }).format(amount);
 };
 
 export const convertToLKR = (usdAmount: number) => {
@@ -27,6 +27,6 @@ export const convertToLKR = (usdAmount: number) => {
 /**
  * Returns a dual currency string if needed
  */
-export const formatDualCurrency = (usdAmount: number) => {
-  return `${formatUSD(usdAmount)} (${formatLKR(usdAmount)})`;
+export const formatDualCurrency = (amount: number) => {
+  return formatLKR(amount);
 };

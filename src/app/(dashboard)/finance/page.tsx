@@ -214,14 +214,14 @@ export default function AdvancedFinancePage() {
                   <div className="space-y-2">
                     <Label>Amount</Label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">RS</span>
                       <Input required type="number" step="0.01" className="pl-9" placeholder="0.00" value={txForm.amount} onChange={(e) => setTxForm({...txForm, amount: e.target.value})} />
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Applicable Tax</Label>
                     <div className="relative">
-                      <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                      <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">RS</span>
                       <Input type="number" step="0.01" className="pl-9" placeholder="0.00" value={txForm.taxAmount} onChange={(e) => setTxForm({...txForm, taxAmount: e.target.value})} />
                     </div>
                   </div>
@@ -333,7 +333,7 @@ export default function AdvancedFinancePage() {
                       </defs>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="currentColor" className="opacity-10" />
                       <XAxis dataKey="name" stroke="currentColor" className="text-muted-foreground text-xs" tickLine={false} axisLine={false} />
-                      <YAxis stroke="currentColor" className="text-muted-foreground text-xs" tickFormatter={(v) => `$${v/1000}k`} tickLine={false} axisLine={false} />
+                      <YAxis stroke="currentColor" className="text-muted-foreground text-xs" tickFormatter={(v) => `Rs ${v/1000}k`} tickLine={false} axisLine={false} />
                       <RechartsTooltip 
                         contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgba(0, 0, 0, 0.1)' }}
                       />
@@ -457,7 +457,7 @@ export default function AdvancedFinancePage() {
                         </span>
                       </td>
                       <td className={`px-6 py-4 text-right font-bold tabular-nums tracking-tight ${t.type === "Income" ? "text-emerald-600 dark:text-emerald-400" : "text-rose-600 dark:text-rose-400"}`}>
-                        {t.type === "Income" ? "+" : "-"}{t.type === "Income" ? formatUSD(t.amount) : formatLKR(t.amount)}
+                        {t.type === "Income" ? "+" : "-"}{ formatLKR(t.amount) }
                       </td>
                       <td className="px-6 py-4 text-right">
                         <Button variant="ghost" size="icon" className="h-8 w-8 text-muted-foreground hover:text-rose-500 hover:bg-rose-50 dark:hover:bg-rose-950/50 opacity-0 group-hover:opacity-100 transition-opacity" onClick={() => {
@@ -488,7 +488,7 @@ export default function AdvancedFinancePage() {
                       <Pie data={deptData} cx="50%" cy="50%" innerRadius={70} outerRadius={100} paddingAngle={5} dataKey="value">
                         {deptData.map((_, index) => <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />)}
                       </Pie>
-                      <RechartsTooltip formatter={(v: number) => formatUSD(v)} contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}/>
+                      <RechartsTooltip formatter={(v: number) => formatLKR(v)} contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0', boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)' }}/>
                       <Legend verticalAlign="bottom" height={36}/>
                     </PieChart>
                   </ResponsiveContainer>
@@ -502,7 +502,7 @@ export default function AdvancedFinancePage() {
                              <div className="w-3 h-3 rounded-full" style={{ backgroundColor: COLORS[i % COLORS.length] }}></div>
                              {d.name}
                            </td>
-                           <td className="py-3 text-right font-bold text-emerald-600">{formatUSD(d.value)}</td>
+                           <td className="py-3 text-right font-bold text-emerald-600">{formatLKR(d.value)}</td>
                          </tr>
                        ))}
                      </tbody>
@@ -518,7 +518,7 @@ export default function AdvancedFinancePage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <BarChart data={expenseData} layout="vertical" margin={{ top: 0, right: 30, left: 40, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" horizontal={true} vertical={false} stroke="currentColor" className="opacity-10" />
-                      <XAxis type="number" stroke="currentColor" className="text-muted-foreground text-xs" tickFormatter={(v) => `$${v/1000}k`} tickLine={false} axisLine={false} />
+                      <XAxis type="number" stroke="currentColor" className="text-muted-foreground text-xs" tickFormatter={(v) => `Rs ${v/1000}k`} tickLine={false} axisLine={false} />
                       <YAxis type="category" dataKey="name" stroke="currentColor" className="text-muted-foreground text-xs font-semibold" tickLine={false} axisLine={false} width={100} />
                       <RechartsTooltip cursor={{fill: 'transparent'}} formatter={(v: number) => formatLKR(v)} contentStyle={{ borderRadius: '12px', border: '1px solid #e2e8f0' }}/>
                       <Bar dataKey="value" fill="#f43f5e" radius={[0, 4, 4, 0]}>

@@ -171,7 +171,7 @@ export default function LoansPage() {
                 <div className="space-y-2">
                   <Label>Principal Amount Received</Label>
                   <div className="relative">
-                    <DollarSign className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-sm font-bold text-muted-foreground">RS</span>
                     <Input type="number" step="1000" className="pl-9" placeholder="0.00" value={form.principalAmount} onChange={(e) => setForm({...form, principalAmount: e.target.value})} />
                   </div>
                 </div>
