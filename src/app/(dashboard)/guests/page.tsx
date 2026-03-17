@@ -64,8 +64,14 @@ export default function GuestsPage() {
     try {
       const res = await fetch(`/api/guests/${id}/full-details`);
       const data = await res.json();
-      setFullGuestData(data);
+      if (!res.ok) {
+        setFullGuestData(null);
+        toast.error(data.error || "Failed to load guest records");
+      } else {
+        setFullGuestData(data);
+      }
     } catch (e) {
+      setFullGuestData(null);
       toast.error("Failed to load guest records");
     } finally {
       setIsDetailsLoading(false);
@@ -165,7 +171,7 @@ export default function GuestsPage() {
   };
 
   const calculateFinance = () => {
-    if (!fullGuestData) return { total: 0, room: 0, treatments: 0, extras: 0 };
+    if (!fullGuestData || !fullGuestData.guest) return { total: 0, room: 0, treatments: 0, extras: 0 };
     const roomCost = fullGuestData.booking?.totalAmount || 0;
     const treatmentsCost = fullGuestData.treatments?.reduce((acc: number, t: any) => acc + (t.sessionPrice || t.treatmentId?.price || 0), 0) || 0;
     const extrasCost = fullGuestData.guest?.extraSpendings?.reduce((acc: number, e: any) => acc + e.amount, 0) || 0;
@@ -178,10 +184,12 @@ export default function GuestsPage() {
   };
 
   const finances = calculateFinance();
-  const filteredGuests = guests.filter(g =>
-    g.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    g.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const filteredGuests = (guests || []).filter(g => {
+    const name = g?.name?.toLowerCase() || "";
+    const email = g?.email?.toLowerCase() || "";
+    const query = searchQuery.toLowerCase();
+    return name.includes(query) || email.includes(query);
+  });
 
   return (
     <div className="space-y-6">
@@ -252,7 +260,7 @@ export default function GuestsPage() {
               <span className="animate-spin h-6 w-6 border-2 border-primary border-t-transparent rounded-full mr-3" />
               <p className="text-muted-foreground font-medium">Synchronizing guest records...</p>
             </div>
-          ) : fullGuestData ? (
+          ) : (fullGuestData && fullGuestData.guest) ? (
             <div className="animate-in fade-in duration-500">
               {/* Profile Card */}
               <div className="rounded-2xl bg-card border shadow-card overflow-hidden">
@@ -263,11 +271,11 @@ export default function GuestsPage() {
                         <User className="h-8 w-8" />
                       </div>
                       <div>
-                        <h2 className="text-2xl font-bold">{fullGuestData.guest.name}</h2>
+                        <h2 className="text-2xl font-bold">{fullGuestData.guest.name || "N/A"}</h2>
                         <div className="flex items-center gap-3 mt-1">
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" /> {fullGuestData.guest.country}</span>
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground"><Phone className="h-3 w-3" /> {fullGuestData.guest.phone}</span>
-                          <span className="flex items-center gap-1 text-xs text-muted-foreground uppercase font-black"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> {fullGuestData.guest.status}</span>
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground"><MapPin className="h-3 w-3" /> {fullGuestData.guest.country || "Unknown"}</span>
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground"><Phone className="h-3 w-3" /> {fullGuestData.guest.phone || "No Phone"}</span>
+                          <span className="flex items-center gap-1 text-xs text-muted-foreground uppercase font-black"><CheckCircle2 className="h-3 w-3 text-emerald-500" /> {fullGuestData.guest.status || "Regular"}</span>
                         </div>
                       </div>
                     </div>
@@ -316,7 +324,7 @@ export default function GuestsPage() {
                         <div className="space-y-3">
                           <h4 className="text-xs font-black uppercase tracking-widest text-muted-foreground">Medical Records</h4>
                           <div className="flex flex-wrap gap-2">
-                             {fullGuestData.guest.medicalCondition?.length > 0 ? fullGuestData.guest.medicalCondition.map((c: string, i: number) => (
+                             {(fullGuestData.guest.medicalCondition && fullGuestData.guest.medicalCondition.length > 0) ? fullGuestData.guest.medicalCondition.map((c: string, i: number) => (
                                <span key={i} className="px-3 py-1 bg-rose-50 text-rose-700 rounded-full text-xs font-bold border border-rose-100">{c}</span>
                              )) : <p className="text-sm text-muted-foreground italic">No medical history noted</p>}
                           </div>
@@ -351,11 +359,11 @@ export default function GuestsPage() {
                            <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
                               <div className="space-y-1">
                                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider flex items-center gap-1"><PlaneLanding className="h-3 w-3" /> Check-In</span>
-                                <p className="text-sm font-bold">{new Date(fullGuestData.booking.checkIn).toLocaleDateString()}</p>
+                                                                 <p className="text-sm font-bold">{fullGuestData.booking.checkIn ? new Date(fullGuestData.booking.checkIn).toLocaleDateString() : "N/A"}</p>
                               </div>
                               <div className="space-y-1">
                                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider flex items-center gap-1"><PlaneTakeoff className="h-3 w-3" /> Check-Out</span>
-                                <p className="text-sm font-bold">{new Date(fullGuestData.booking.checkOut).toLocaleDateString()}</p>
+                                                                 <p className="text-sm font-bold">{fullGuestData.booking.checkOut ? new Date(fullGuestData.booking.checkOut).toLocaleDateString() : "N/A"}</p>
                               </div>
                               <div className="space-y-1">
                                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Base Rate / Day</span>
@@ -363,7 +371,7 @@ export default function GuestsPage() {
                               </div>
                               <div className="space-y-1">
                                 <span className="text-[10px] font-black text-muted-foreground uppercase tracking-wider">Total Est. Room Cost</span>
-                                <p className="text-sm font-bold">{formatLKR(fullGuestData.booking.totalAmount)}</p>
+                                                                 <p className="text-sm font-bold">{formatLKR(fullGuestData.booking.totalAmount || 0)}</p>
                               </div>
                            </div>
 
@@ -413,10 +421,10 @@ export default function GuestsPage() {
                             </tr>
                           </thead>
                           <tbody>
-                            {fullGuestData.guest.extraSpendings?.length > 0 ? fullGuestData.guest.extraSpendings.map((s: any) => (
+                             {fullGuestData.guest?.extraSpendings?.length > 0 ? fullGuestData.guest.extraSpendings.map((s: any) => (
                               <tr key={s._id} className="border-t hover:bg-muted/10 transition-colors">
                                 <td className="p-4 font-semibold">{s.description}</td>
-                                <td className="p-4 text-muted-foreground">{new Date(s.date).toLocaleDateString()}</td>
+                                <td className="p-4 text-muted-foreground">{s.date ? new Date(s.date).toLocaleDateString() : "N/A"}</td>
                                 <td className="p-4 text-right font-bold text-amber-600">{formatLKR(s.amount)}</td>
                                 <td className="p-4 text-right">
                                    <button onClick={() => deleteSpending(s._id)} className="text-muted-foreground hover:text-destructive p-1.5 rounded-lg transition-all"><Trash2 className="h-3.5 w-3.5" /></button>
@@ -458,7 +466,7 @@ export default function GuestsPage() {
                                 </div>
                                 <div>
                                    <h5 className="font-bold text-sm tracking-tight">{t.treatmentId?.name || "Global Treatment"}</h5>
-                                   <p className="text-[10px] text-muted-foreground flex items-center gap-1 font-bold"><Calendar className="h-3 w-3" /> {new Date(t.scheduledTime).toLocaleString()}</p>
+                                                                       <p className="text-[10px] text-muted-foreground flex items-center gap-1 font-bold"><Calendar className="h-3 w-3" /> {t.scheduledTime ? new Date(t.scheduledTime).toLocaleString() : "N/A"}</p>
                                 </div>
                              </div>
                              <div className="text-right">

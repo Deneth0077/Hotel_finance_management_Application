@@ -151,10 +151,12 @@ export default function StaffSalaryPage() {
 
   const totalMonthlyPayout = staff.reduce((acc: number, s: any) => acc + s.baseSalary, 0);
 
-  const filteredStaff = staff.filter((s: any) => 
-    s.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
-    s.role.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredStaff = (staff || []).filter((s: any) => {
+    const name = s?.name?.toLowerCase() || "";
+    const role = s?.role?.toLowerCase() || "";
+    const term = (searchTerm || "").toLowerCase();
+    return name.includes(term) || role.includes(term);
+  });
 
   return (
     <div className="space-y-6">
