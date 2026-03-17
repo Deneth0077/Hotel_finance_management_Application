@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import Booking from "@/models/Booking";
+import Room from "@/models/Room";
 import "@/models/Guest"; // Ensure models are registered
 import "@/models/Room";
 import Transaction from "@/models/Transaction";
@@ -42,6 +43,11 @@ export async function POST(request: Request) {
 
     const booking = await Booking.create(body);
     
+    // IF the status is "Checked-in", update the Room status to "Occupied"
+    if (booking.status === "Checked-in") {
+      await Room.findByIdAndUpdate(booking.roomId, { status: "Occupied" });
+    }
+
     // Automatically register the booking revenue in the Master Ledger Account
     await Transaction.create({
       type: "Income",

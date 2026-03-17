@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import connectToDatabase from "@/lib/db";
 import Booking from "@/models/Booking";
+import Room from "@/models/Room";
 import { createLog } from "@/lib/logger";
 
 export async function PATCH(
@@ -12,10 +13,20 @@ export async function PATCH(
     const body = await request.json();
     await connectToDatabase();
 
+    const oldBooking = await Booking.findById(id);
     const booking = await Booking.findByIdAndUpdate(id, body, { new: true });
     
     if (!booking) {
       return NextResponse.json({ error: "Booking not found" }, { status: 404 });
+    }
+
+    // ROOM SYNC LOGIC
+    if (body.status && body.status !== oldBooking?.status) {
+      if (body.status === "Checked-in") {
+        await Room.findByIdAndUpdate(booking.roomId, { status: "Occupied" });
+      } else if (body.status === "Checked-out" || body.status === "Cancelled") {
+        await Room.findByIdAndUpdate(booking.roomId, { status: "Available" });
+      }
     }
 
     await createLog({
