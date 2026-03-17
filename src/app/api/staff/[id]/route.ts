@@ -41,6 +41,18 @@ export async function POST(
       transactionId: transaction._id
     });
 
+    // Reset pending tips since they've just been paid out
+    member.pendingTips = 0;
+    
+    // Log the salary payment action
+    await createLog({
+      userName: "System Admin",
+      userRole: "Finance",
+      action: "Processed Salary",
+      details: `Paid Rs. ${totalPaid} (Base: ${member.baseSalary}, Tips: ${tips}, Allowance: ${allowances}) to ${member.name}`,
+      path: "/staff"
+    });
+
     await member.save();
 
     return NextResponse.json(member);

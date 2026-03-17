@@ -19,7 +19,7 @@ export function StaffForm({ onClose, onSuccess, initialData }: StaffFormProps) {
     email: initialData?.email || "",
     phone: initialData?.phone || "",
     baseSalary: initialData?.baseSalary || 0,
-    salaryPayDay: initialData?.salaryPayDay || 1,
+    allowance: initialData?.allowance || 0,
   });
 
   const mutation = useMutation({
@@ -89,15 +89,26 @@ export function StaffForm({ onClose, onSuccess, initialData }: StaffFormProps) {
             />
           </div>
 
-          <div className="space-y-2">
-            <label className="text-sm font-semibold">Base Salary (LKR) *</label>
-            <input
-              type="number"
-              required
-              className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
-              value={formData.baseSalary}
-              onChange={(e) => setFormData({ ...formData, baseSalary: Number(e.target.value) })}
-            />
+          <div className="grid grid-cols-2 gap-4">
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Base Salary (LKR) *</label>
+              <input
+                type="number"
+                required
+                className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                value={formData.baseSalary}
+                onChange={(e) => setFormData({ ...formData, baseSalary: Number(e.target.value) })}
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-sm font-semibold">Allowances (LKR)</label>
+              <input
+                type="number"
+                className="w-full rounded-lg border bg-background px-3 py-2 text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                value={formData.allowance}
+                onChange={(e) => setFormData({ ...formData, allowance: Number(e.target.value) })}
+              />
+            </div>
           </div>
 
           <div className="space-y-2">

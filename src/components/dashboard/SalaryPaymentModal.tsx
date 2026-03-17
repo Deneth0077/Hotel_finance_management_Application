@@ -13,8 +13,8 @@ interface SalaryPaymentModalProps {
 
 export function SalaryPaymentModal({ member, onClose }: SalaryPaymentModalProps) {
   const queryClient = useQueryClient();
-  const [allowance, setAllowance] = useState(0);
-  const [tips, setTips] = useState(0);
+  const [allowance, setAllowance] = useState(member.allowance || 0);
+  const [tips, setTips] = useState(member.pendingTips || 0);
 
   const paySalary = useMutation({
     mutationFn: async (data: any) => {

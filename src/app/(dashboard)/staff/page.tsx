@@ -4,7 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { 
   Users, Plus, DollarSign, Calendar, 
   Trash2, Wallet, Sparkles, TrendingUp,
-  Search, UserCog
+  Search, UserCog, HeartHandshake
 } from "lucide-react";
 import { MetricCard } from "@/components/dashboard/MetricCard";
 import { formatLKR } from "@/lib/currency";
@@ -19,6 +19,7 @@ export default function StaffSalaryPage() {
   const [isAdding, setIsAdding] = useState(false);
   const [editingMember, setEditingMember] = useState<any>(null);
   const [payingMember, setPayingMember] = useState<any>(null);
+  const [tipAmount, setTipAmount] = useState("");
 
   const { data: staff = [], isLoading } = useQuery({
     queryKey: ["staff"],
@@ -58,6 +59,27 @@ export default function StaffSalaryPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["staff"] });
       toast.success("Salary processed & transaction recorded");
+    }
+  });
+
+  const distributeTips = useMutation({
+    mutationFn: async (amount: number) => {
+      const res = await fetch("/api/staff/distribute-tips", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ amount }),
+      });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.error || "Failed to distribute tips");
+      return data;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ["staff"] });
+      toast.success(`Successfully distributed Rs. ${data.splitAmount} to ${data.activeStaffCount} active staff!`);
+      setTipAmount("");
+    },
+    onError: (error: any) => {
+      toast.error(error.message);
     }
   });
 
@@ -102,6 +124,36 @@ export default function StaffSalaryPage() {
           icon={<Calendar className="h-4 w-4 text-purple-500" />}
           description="Standard disbursement cycle"
         />
+        <div className="rounded-xl bg-card p-6 shadow-card border flex flex-col justify-between items-start gap-4">
+          <div className="flex items-center gap-3 w-full">
+            <div className="rounded-lg bg-amber-100 p-2 text-amber-600 dark:bg-amber-900/30 dark:text-amber-400">
+              <HeartHandshake className="h-5 w-5" />
+            </div>
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground leading-tight">Global Tip Box</h3>
+              <p className="text-xs text-muted-foreground mt-0.5">Distribute pooled tips equally</p>
+            </div>
+          </div>
+          <div className="flex w-full items-center gap-2">
+            <div className="relative flex-1">
+              <span className="absolute left-3 top-1/2 -translate-y-1/2 text-muted-foreground text-xs font-bold">Rs.</span>
+              <input 
+                type="number" 
+                placeholder="0.00" 
+                className="w-full pl-10 pr-3 py-2 bg-background border rounded-lg text-sm focus:ring-2 focus:ring-primary/20 outline-none"
+                value={tipAmount}
+                onChange={(e) => setTipAmount(e.target.value)}
+              />
+            </div>
+            <button 
+              onClick={() => tipAmount && distributeTips.mutate(Number(tipAmount))}
+              disabled={distributeTips.isPending || !tipAmount}
+              className="px-3 py-2 bg-amber-500 hover:bg-amber-600 text-white font-semibold rounded-lg text-sm shadow transition-colors disabled:opacity-50 whitespace-nowrap"
+            >
+              {distributeTips.isPending ? "Sharing..." : "Share Tips"}
+            </button>
+          </div>
+        </div>
       </div>
 
       <div className="bg-card rounded-xl border shadow-sm overflow-hidden flex flex-col">
@@ -125,7 +177,9 @@ export default function StaffSalaryPage() {
                 <th className="p-4">Employee</th>
                 <th className="p-4">Role</th>
                 <th className="p-4">Base Salary</th>
-                <th className="p-4">Pay Day</th>
+                <th className="p-4">Dimana</th>
+                <th className="p-4">Pending Tips</th>
+                <th className="p-4 font-bold text-primary">Total Payable</th>
                 <th className="p-4 text-right">Actions</th>
               </tr>
             </thead>
@@ -144,7 +198,11 @@ export default function StaffSalaryPage() {
                     <span className="px-2 py-1 rounded bg-muted text-[10px] font-bold uppercase tracking-wider">{s.role}</span>
                   </td>
                   <td className="p-4 font-medium">{formatLKR(s.baseSalary)}</td>
-                  <td className="p-4 text-muted-foreground text-xs">Day {s.salaryPayDay}</td>
+                  <td className="p-4 text-muted-foreground">{formatLKR(s.allowance || 0)}</td>
+                  <td className="p-4 text-amber-600 font-semibold">{formatLKR(s.pendingTips || 0)}</td>
+                  <td className="p-4 font-black tracking-tight text-primary">
+                    {formatLKR(s.baseSalary + (s.allowance || 0) + (s.pendingTips || 0))}
+                  </td>
                   <td className="p-4 text-right flex items-center justify-end gap-2">
                     <button 
                       onClick={() => setPayingMember(s)}

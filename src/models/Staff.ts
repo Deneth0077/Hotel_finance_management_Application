@@ -6,7 +6,8 @@ const StaffSchema = new mongoose.Schema({
   email: { type: String },
   phone: { type: String },
   baseSalary: { type: Number, required: true },
-  salaryPayDay: { type: Number, default: 1 }, // Day of month 1-31
+  allowance: { type: Number, default: 0 }, // Additional profile-based allowance (dimana)
+  pendingTips: { type: Number, default: 0 }, // Tips allocated but not yet paid
   joiningDate: { type: Date, default: Date.now },
   status: { 
     type: String, 
