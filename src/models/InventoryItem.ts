@@ -4,7 +4,6 @@ const InventoryItemSchema = new mongoose.Schema({
   name: { type: String, required: true },
   category: { 
     type: String, 
-    enum: ["Kitchen", "Treatment Oil", "Medicine", "Spa Supply", "General"], 
     required: true 
   },
   currentStock: { type: Number, required: true, default: 0 },
